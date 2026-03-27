@@ -419,12 +419,151 @@ main.content {
   letter-spacing: -0.5px;
 }
 
-.loading {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  font-size: 1.5rem;
-  font-weight: 700;
-  color: var(--primary);
+/* Mobile Optimization & Responsiveness */
+@media (max-width: 1024px) {
+  :root {
+    --sidebar-w: 220px;
+  }
+}
+
+@media (max-width: 768px) {
+  .app-container {
+    overflow-x: hidden;
+  }
+
+  .main-layout {
+    flex-direction: column;
+    overflow: visible;
+  }
+
+  aside.sidebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 280px;
+    transform: translateX(-100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 2000;
+    box-shadow: 20px 0 50px rgba(0, 0, 0, 0.5);
+    padding-top: 80px;
+  }
+
+  aside.sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    z-index: 1999;
+    display: none;
+  }
+
+  .sidebar-overlay.active {
+    display: block;
+  }
+
+  main.content {
+    padding: 20px;
+    overflow-y: visible;
+  }
+
+  .header {
+    margin-bottom: 24px;
+    padding-top: 60px; /* Space for mobile header */
+  }
+
+  .header h1 {
+    font-size: 1.8rem;
+  }
+
+  .video-grid {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+
+  .mobile-header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 64px;
+    background: var(--secondary);
+    border-bottom: 1px solid var(--glass-border);
+    display: flex;
+    align-items: center;
+    padding: 0 16px;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+  }
+
+  .menu-toggle {
+    background: none;
+    border: none;
+    color: var(--foreground);
+    padding: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .mobile-logo {
+    margin-left: 12px;
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--primary);
+    text-transform: uppercase;
+  }
+
+  .mobile-logo span {
+    color: var(--accent);
+  }
+
+  /* Video Player Adjustments */
+  .player-overlay {
+    padding: 16px;
+  }
+
+  .player-close {
+    top: 16px;
+    right: 16px;
+    padding: 8px;
+  }
+
+  .player-main {
+    gap: 20px;
+  }
+
+  .player-controls {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .toggle-group {
+    justify-content: center;
+  }
+
+  .toggle-btn {
+    flex: 1;
+    padding: 10px 12px;
+    font-size: 0.85rem;
+  }
+
+  .download-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Base styles for new components */
+.mobile-header {
+  display: none;
 }

@@ -8,6 +8,7 @@ import {
   ChevronDown,
   Info,
   Trophy,
+  Menu,
 } from "lucide-react";
 import type { VideoMetadata, FolderManifest, Sport } from "./types";
 
@@ -25,6 +26,7 @@ const App: FC = () => {
   );
   const [announcement, setAnnouncement] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   // Load sports list once
   useEffect(() => {
@@ -107,6 +109,20 @@ const App: FC = () => {
 
   return (
     <div className="app-container">
+      <div
+        className={`sidebar-overlay ${isSidebarOpen ? "active" : ""}`}
+        onClick={() => setIsSidebarOpen(false)}
+      />
+
+      <div className="mobile-header">
+        <button className="menu-toggle" onClick={() => setIsSidebarOpen(true)}>
+          <Menu size={24} />
+        </button>
+        <div className="mobile-logo">
+          WAHS <span>Vault</span>
+        </div>
+      </div>
+
       {announcement && (
         <div className="announcement-banner">
           <Info size={18} className="icon" />
@@ -114,7 +130,7 @@ const App: FC = () => {
         </div>
       )}
       <div className="main-layout">
-        <aside className="sidebar">
+        <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
           <h2>
             <Video className="icon-blue" /> WAHS <span>Vault</span>
           </h2>
@@ -130,7 +146,10 @@ const App: FC = () => {
                   <div
                     key={sport.id}
                     className={`sport-item ${selectedSport?.id === sport.id ? "active" : ""}`}
-                    onClick={() => setSelectedSport(sport)}
+                    onClick={() => {
+                      setSelectedSport(sport);
+                      setIsSidebarOpen(false);
+                    }}
                   >
                     {sport.name}
                   </div>
@@ -147,7 +166,10 @@ const App: FC = () => {
                 <div
                   key={folder.name}
                   className={`folder-item ${selectedFolder?.name === folder.name ? "active" : ""}`}
-                  onClick={() => setSelectedFolder(folder)}
+                  onClick={() => {
+                    setSelectedFolder(folder);
+                    setIsSidebarOpen(false);
+                  }}
                 >
                   <span>{folder.name}</span>
                 </div>
