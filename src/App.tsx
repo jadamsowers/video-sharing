@@ -114,6 +114,13 @@ const App: FC = () => {
         onClick={() => setIsSidebarOpen(false)}
       />
 
+      {announcement && (
+        <div className="announcement-banner">
+          <Info size={18} className="icon" />
+          <span>{announcement}</span>
+        </div>
+      )}
+
       <div className="mobile-header">
         <button className="menu-toggle" onClick={() => setIsSidebarOpen(true)}>
           <Menu size={24} />
@@ -122,13 +129,6 @@ const App: FC = () => {
           WAHS <span>Vault</span>
         </div>
       </div>
-
-      {announcement && (
-        <div className="announcement-banner">
-          <Info size={18} className="icon" />
-          <span>{announcement}</span>
-        </div>
-      )}
       <div className="main-layout">
         <aside className={`sidebar ${isSidebarOpen ? "open" : ""}`}>
           <h2>
