@@ -107,8 +107,8 @@ app.use('/media', express.static(MEDIA_ROOT));
 // Serve built frontend
 app.use(express.static(path.join(__dirname, 'dist')));
 
-// Fallback for SPA (Single Page App)
-app.get('/:path*', (req, res) => {
+// Fallback for SPA (Single Page App) - use RegExp to bypass path-to-regexp string parser
+app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
