@@ -612,7 +612,7 @@ const VideoOverlay: FC<{
                         {processing ? (
                           <>
                             <Loader2 size={18} className="animate-spin" />{" "}
-                            {progress}%
+                            Exporting...
                           </>
                         ) : (
                           <>
