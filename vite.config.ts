@@ -48,9 +48,9 @@ export default defineConfig({
       "Cross-Origin-Embedder-Policy": "require-corp",
     },
     proxy: {
-      '/api': 'http://localhost:8080',
-      '/clips': 'http://localhost:8080',
-      '/media': 'http://localhost:8080'
+      '/api': 'http://127.0.0.1:8080',
+      '/clips': 'http://127.0.0.1:8080',
+      '/media': 'http://127.0.0.1:8080'
     }
   },
   preview: {

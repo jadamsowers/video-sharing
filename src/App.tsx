@@ -22,7 +22,6 @@ import {
   Shield,
   Zap,
   Search,
-  Maximize,
   ChevronLeft,
   Share2,
   Film,
@@ -637,11 +636,6 @@ const VideoOverlay: FC<{
     videoRef.current.play();
   };
 
-  const handleFullscreen = () => {
-    if (!videoRef.current) return;
-    videoRef.current.enterFullscreen();
-  };
-
   const availableVersions = Object.keys(video.versions);
 
   const switchToMode = (mode: "60fps" | "120fps") => {
@@ -700,6 +694,76 @@ const VideoOverlay: FC<{
                 thumbnails={`${MEDIA_ROOT}/${sportPath}/${folderPath}/${video.versions[currentMode]?.filename.replace('.mp4', '_thumbnails.vtt')}`} 
                 icons={defaultLayoutIcons} 
               />
+              <div className="vidstack-top-toolbar">
+                {video.versions["60fps"] && video.versions["120fps"] && (
+                  <div className="toggle-group">
+                    <button
+                      className={`toggle-btn ${currentMode === "60fps" ? "active" : ""}`}
+                      onClick={(e) => { e.stopPropagation(); switchToMode("60fps"); }}
+                      disabled={!video.versions["60fps"]}
+                    >
+                      Regular
+                    </button>
+                    <button
+                      className={`toggle-btn ${currentMode === "120fps" ? "active" : ""}`}
+                      onClick={(e) => { e.stopPropagation(); switchToMode("120fps"); }}
+                      disabled={!video.versions["120fps"]}
+                    >
+                      Slow-mo
+                    </button>
+                  </div>
+                )}
+                
+                <div className="clip-tool-container">
+                  {!isClipping ? (
+                    <button
+                      className="action-btn clip-btn"
+                      onClick={(e) => { e.stopPropagation(); setIsClipping(true); }}
+                    >
+                      <Scissors size={18} /> Clip
+                    </button>
+                  ) : (
+                    <div className="clip-controls" onClick={(e) => e.stopPropagation()}>
+                      <div className="clip-inputs">
+                        <button
+                          className={`marker-btn ${clipStart !== null ? "set" : ""}`}
+                          onClick={() => setClipStart(videoRef.current?.currentTime || 0)}
+                        >
+                          {clipStart !== null ? formatDuration(clipStart) : "Set Start"}
+                        </button>
+                        <button
+                          className={`marker-btn ${clipEnd !== null ? "set" : ""}`}
+                          onClick={() => setClipEnd(videoRef.current?.currentTime || 0)}
+                        >
+                          {clipEnd !== null ? formatDuration(clipEnd) : "Set End"}
+                        </button>
+                      </div>
+
+                      {clipStart !== null && clipEnd !== null && (
+                        <button
+                          className="save-clip-btn"
+                          onClick={handleSaveClip}
+                          disabled={processing}
+                        >
+                          {processing ? (
+                            <><Loader2 size={16} className="animate-spin" /></>
+                          ) : (
+                            <><Check size={16} /> Export</>
+                          )}
+                        </button>
+                      )}
+
+                      <button
+                        className="cancel-btn"
+                        onClick={() => { setIsClipping(false); setClipStart(null); setClipEnd(null); }}
+                        disabled={processing}
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
             </MediaPlayer>
           </div>
 
@@ -711,34 +775,7 @@ const VideoOverlay: FC<{
               <p>{video.date}</p>
             </div>
 
-            {video.versions["60fps"] && video.versions["120fps"] && (
-              <div className="toggle-group">
-                <button
-                  className={`toggle-btn ${currentMode === "60fps" ? "active" : ""}`}
-                  onClick={() => switchToMode("60fps")}
-                  disabled={!video.versions["60fps"]}
-                >
-                  Regular (60fps)
-                </button>
-                <button
-                  className={`toggle-btn ${currentMode === "120fps" ? "active" : ""}`}
-                  onClick={() => switchToMode("120fps")}
-                  disabled={!video.versions["120fps"]}
-                >
-                  Slow-mo (120fps)
-                </button>
-              </div>
-            )}
-
             <div className="action-buttons">
-              <button
-                className="action-btn fullscreen-btn mobile-only-btn"
-                onClick={handleFullscreen}
-                title="Fullscreen"
-              >
-                <Maximize size={20} />
-              </button>
-
               <button
                 className={`action-btn share-btn ${shareCopied ? "copied" : ""}`}
                 onClick={handleShare}
@@ -746,73 +783,6 @@ const VideoOverlay: FC<{
               >
                 {shareCopied ? <><Check size={20} /> Copied!</> : <><Share2 size={20} /> Share</>}
               </button>
-
-              <div className="clip-tool-container">
-                {!isClipping ? (
-                  <button
-                    className="action-btn clip-btn"
-                    onClick={() => setIsClipping(true)}
-                  >
-                    <Scissors size={20} /> Create Clip
-                  </button>
-                ) : (
-                  <div className="clip-controls">
-                    <div className="clip-inputs">
-                      <button
-                        className={`marker-btn ${clipStart !== null ? "set" : ""}`}
-                        onClick={() =>
-                          setClipStart(videoRef.current?.currentTime || 0)
-                        }
-                      >
-                        {clipStart !== null
-                          ? `Start: ${formatDuration(clipStart)}`
-                          : "Set Start"}
-                      </button>
-                      <button
-                        className={`marker-btn ${clipEnd !== null ? "set" : ""}`}
-                        onClick={() =>
-                          setClipEnd(videoRef.current?.currentTime || 0)
-                        }
-                      >
-                        {clipEnd !== null
-                          ? `End: ${formatDuration(clipEnd)}`
-                          : "Set End"}
-                      </button>
-                    </div>
-
-                    {clipStart !== null && clipEnd !== null && (
-                      <button
-                        className="save-clip-btn"
-                        onClick={handleSaveClip}
-                        disabled={processing}
-                      >
-                        {processing ? (
-                          <>
-                            <Loader2 size={18} className="animate-spin" />{" "}
-                            Exporting...
-                          </>
-                        ) : (
-                          <>
-                            <Check size={18} /> Export Highlight ({formatDuration(Math.abs(clipEnd - clipStart))})
-                          </>
-                        )}
-                      </button>
-                    )}
-
-                    <button
-                      className="cancel-btn"
-                      onClick={() => {
-                        setIsClipping(false);
-                        setClipStart(null);
-                        setClipEnd(null);
-                      }}
-                      disabled={processing}
-                    >
-                      <X size={18} />
-                    </button>
-                  </div>
-                )}
-              </div>
 
               <div className="download-dropdown">
                 <button

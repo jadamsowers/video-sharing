@@ -739,6 +739,23 @@ main.content {
   height: 100%;
 }
 
+.vidstack-top-toolbar {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  left: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 16px;
+  z-index: 50;
+  pointer-events: none;
+}
+
+.vidstack-top-toolbar > * {
+  pointer-events: auto;
+}
+
 .player-controls {
   width: 100%;
   max-width: 1200px;
@@ -817,12 +834,6 @@ main.content {
   align-items: center;
   gap: 10px;
   transition: all 0.2s;
-}
-
-.fullscreen-btn {
-  padding: 12px;
-  border-radius: 50%;
-  aspect-ratio: 1;
 }
 
 .action-btn:hover {
