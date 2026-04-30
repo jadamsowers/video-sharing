@@ -9,7 +9,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 const PORT = process.env.PORT || 8080;
-const MEDIA_ROOT = process.env.MEDIA_ROOT || '/Volumes/Data/Videos';
+const MEDIA_ROOT = process.env.MEDIA_ROOT || '/srv/docker/media/';
 
 // Middleware to parse JSON bodies
 app.use(express.json());
