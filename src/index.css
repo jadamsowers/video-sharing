@@ -1328,6 +1328,57 @@ main.content {
     font-size: 0.85rem;
   }
 
+  .vidstack-top-toolbar {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    gap: 8px;
+    justify-content: flex-start;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .vidstack-top-toolbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .vidstack-top-toolbar > * {
+    flex-shrink: 0;
+  }
+
+  .vidstack-top-toolbar .action-btn {
+    padding: 6px 12px;
+    font-size: 0.8rem;
+  }
+
+  .clip-controls {
+    padding: 4px;
+    gap: 4px;
+  }
+
+  .marker-btn {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+  }
+
+  .save-clip-btn {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+
+  .clip-timeline-container {
+    bottom: 45px;
+    height: 30px;
+    left: 10px;
+    right: 10px;
+  }
+
+  .clip-timeline-handle {
+    width: 12px;
+    height: 24px;
+  }
+
   .download-btn {
     width: 100%;
     justify-content: center;
