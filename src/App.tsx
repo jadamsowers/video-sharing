@@ -583,12 +583,13 @@ const VideoOverlay: FC<{
       });
 
       if (!response.ok) {
+        const text = await response.text();
         let errorMsg = `Server error (${response.status})`;
         try {
-          const errorData = await response.json();
+          const errorData = JSON.parse(text);
           errorMsg = errorData.error || errorMsg;
         } catch {
-          errorMsg = await response.text().catch(() => errorMsg);
+          errorMsg = text || errorMsg;
         }
         throw new Error(errorMsg);
       }
