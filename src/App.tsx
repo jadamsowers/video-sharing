@@ -692,6 +692,17 @@ const VideoOverlay: FC<{
               onCanPlay={handleLoadedMetadata}
               onPlay={() => setPlaying(true)}
               onPause={() => setPlaying(false)}
+              onTimeUpdate={() => {
+                if (isClipping && clipStart !== null && clipEnd !== null && videoRef.current) {
+                  const current = videoRef.current.currentTime;
+                  const end = Math.max(clipStart, clipEnd);
+                  const start = Math.min(clipStart, clipEnd);
+                  // Allow a tiny buffer to avoid infinite jumping if time is slightly imprecise
+                  if (current >= end) {
+                    videoRef.current.currentTime = start;
+                  }
+                }
+              }}
             >
               <MediaProvider />
               <DefaultVideoLayout 

@@ -1323,16 +1323,16 @@ main.content {
   }
 
   .toggle-btn {
-    flex: 1;
-    padding: 10px 12px;
-    font-size: 0.85rem;
+    flex: 0 0 auto;
+    padding: 6px 10px;
+    font-size: 0.75rem;
   }
 
   .vidstack-top-toolbar {
-    top: 8px;
-    left: 8px;
-    right: 8px;
-    gap: 8px;
+    top: 6px;
+    left: 6px;
+    right: 6px;
+    gap: 6px;
     justify-content: flex-start;
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
@@ -1348,23 +1348,28 @@ main.content {
   }
 
   .vidstack-top-toolbar .action-btn {
-    padding: 6px 12px;
-    font-size: 0.8rem;
-  }
-
-  .clip-controls {
-    padding: 4px;
-    gap: 4px;
-  }
-
-  .marker-btn {
     padding: 6px 10px;
     font-size: 0.75rem;
   }
+  
+  .vidstack-top-toolbar svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .clip-controls {
+    padding: 2px;
+    gap: 2px;
+  }
+
+  .marker-btn {
+    padding: 4px 8px;
+    font-size: 0.7rem;
+  }
 
   .save-clip-btn {
-    padding: 6px 12px;
-    font-size: 0.75rem;
+    padding: 4px 8px;
+    font-size: 0.7rem;
   }
 
   .clip-timeline-container {
