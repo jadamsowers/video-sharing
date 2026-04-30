@@ -6,6 +6,13 @@ export interface VideoVersion {
   stretch_factor: number;
 }
 
+export interface Tag {
+  id: string;
+  label: string;
+  time: number; // Reference time in seconds (at 1x speed)
+  type: "goal" | "play" | "save" | "other";
+}
+
 export interface VideoMetadata {
   opponent: string;
   date: string;
@@ -14,6 +21,7 @@ export interface VideoMetadata {
     [key: string]: VideoVersion;
   };
   thumbnail: string;
+  tags?: Tag[];
 }
 
 export interface Sport {

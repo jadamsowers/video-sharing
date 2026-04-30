@@ -38,6 +38,18 @@ export default defineConfig({
       }
     })()
   ],
+  server: {
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Embedder-Policy": "require-corp",
+    },
+  },
+  preview: {
+    headers: {
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Cross-Origin-Embedder-Policy": "require-corp",
+    },
+  },
   build: {
     // We disable the default publicDir copy to avoid including the huge media symlinked folder.
     // The custom plugin above handles copying only the PWA files we need.

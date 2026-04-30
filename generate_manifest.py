@@ -67,6 +67,7 @@ def process_sport_folder(sport_path):
     
     for folder in root.iterdir():
         if not folder.is_dir() or folder.name.startswith('.'):
+            print(f"Skipping non-directory: {folder.name}")
             continue
             
         folder_manifest = {
@@ -78,6 +79,7 @@ def process_sport_folder(sport_path):
         for file in folder.glob('*.mp4'):
             match = pattern.match(file.name)
             if not match:
+                print
                 continue
             
             opponent, date, clip_num, fps_label = match.groups()
