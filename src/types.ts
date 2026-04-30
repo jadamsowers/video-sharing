@@ -11,6 +11,7 @@ export interface Tag {
   label: string;
   time: number; // Reference time in seconds (at 1x speed)
   type: "goal" | "play" | "save" | "other";
+  jerseyNumber?: string;
 }
 
 export interface VideoMetadata {
@@ -34,4 +35,5 @@ export interface Sport {
 export interface FolderManifest {
   name: string;
   videos: VideoMetadata[];
+  folder_path?: string;
 }

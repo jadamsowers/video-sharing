@@ -16,9 +16,10 @@ import {
   Star,
   Shield,
   Zap,
+  Search,
+  Maximize,
+  ChevronLeft,
 } from "lucide-react";
-import { FFmpeg } from "@ffmpeg/ffmpeg";
-import { fetchFile, toBlobURL } from "@ffmpeg/util";
 import type { VideoMetadata, FolderManifest, Sport, Tag } from "./types";
 
 const MEDIA_ROOT = "/media";
@@ -42,6 +43,7 @@ const App: FC = () => {
   const [announcement, setAnnouncement] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [mobileNavLevel, setMobileNavLevel] = useState<0 | 1 | 2>(0); // 0: Sports, 1: Folders, 2: Videos
 
   // Load sports list once
   useEffect(() => {
@@ -111,11 +113,20 @@ const App: FC = () => {
         const detailedFolders = await Promise.all(
           foldersList.map(
             async (f: { name: string; manifest_path: string }) => {
+              // Normalize manifest path (remove leading ./)
+              const relPath = f.manifest_path.replace(/^\.\//, "");
               const mRes = await fetch(
-                `${MEDIA_ROOT}/${selectedSport.path}/${f.name}/manifest.json`,
+                `${MEDIA_ROOT}/${selectedSport.path}/${relPath}`,
               );
               if (!mRes.ok) return null;
-              return await mRes.json();
+              const data = await mRes.json();
+              return {
+                ...data,
+                // Preserve the formatted name from the folders.json list
+                name: f.name,
+                // The folder path is the manifest path minus the filename
+                folder_path: relPath.substring(0, relPath.lastIndexOf("/")),
+              };
             },
           ),
         );
@@ -190,6 +201,7 @@ const App: FC = () => {
                     onClick={() => {
                       setSelectedSport(sport);
                       setIsSidebarOpen(false);
+                      setMobileNavLevel(1);
                     }}
                   >
                     {sport.name}
@@ -210,6 +222,7 @@ const App: FC = () => {
                   onClick={() => {
                     setSelectedFolder(folder);
                     setIsSidebarOpen(false);
+                    setMobileNavLevel(2);
                   }}
                 >
                   <span>{folder.name}</span>
@@ -221,13 +234,66 @@ const App: FC = () => {
 
         <main className="content">
           <header className="header">
-            <div>
-              <h1>{selectedFolder?.name || "Clips"}</h1>
-              <p>{selectedFolder?.videos.length || 0} videos</p>
+            <div className="header-nav">
+              {mobileNavLevel > 0 && (
+                <button 
+                  className="mobile-back-btn" 
+                  onClick={() => setMobileNavLevel((prev) => (prev - 1) as any)}
+                >
+                  <ChevronLeft size={24} />
+                </button>
+              )}
+              <div>
+                <h1>{mobileNavLevel === 0 ? "Sports" : mobileNavLevel === 1 ? (selectedSport?.name || "Collections") : (selectedFolder?.name || "Clips")}</h1>
+                <p>
+                  {mobileNavLevel === 0 ? `${sports.length} active programs` : 
+                   mobileNavLevel === 1 ? `${folders.length} collections` : 
+                   `${selectedFolder?.videos.length || 0} videos`}
+                </p>
+              </div>
             </div>
           </header>
 
-          <div className="video-grid">
+          {/* Mobile Drill-down Menu */}
+          <div className="mobile-drilldown">
+            {mobileNavLevel === 0 && (
+              <div className="menu-grid">
+                {sports.filter(s => s.has_content).map(sport => (
+                  <div 
+                    key={sport.id} 
+                    className={`menu-card ${selectedSport?.id === sport.id ? "active" : ""}`}
+                    onClick={() => {
+                      setSelectedSport(sport);
+                      setMobileNavLevel(1);
+                    }}
+                  >
+                    <Trophy size={32} className="icon-blue" />
+                    <h3>{sport.name}</h3>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {mobileNavLevel === 1 && (
+              <div className="menu-list">
+                {folders.map(folder => (
+                  <div 
+                    key={folder.name} 
+                    className={`menu-item ${selectedFolder?.name === folder.name ? "active" : ""}`}
+                    onClick={() => {
+                      setSelectedFolder(folder);
+                      setMobileNavLevel(2);
+                    }}
+                  >
+                    <Folder size={20} />
+                    <span>{folder.name}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div className={`video-grid ${mobileNavLevel < 2 ? "mobile-hidden" : ""}`}>
             {selectedFolder?.videos
               .filter((v) => Object.keys(v.versions).length > 0)
               .map((vid) => (
@@ -238,7 +304,7 @@ const App: FC = () => {
                 >
                   <div className="thumbnail-container">
                     <img
-                      src={`${MEDIA_ROOT}/${selectedSport?.path}/${selectedFolder.name}/${vid.thumbnail}`}
+                      src={`${MEDIA_ROOT}/${selectedSport?.path}/${selectedFolder.folder_path || selectedFolder.name}/${vid.thumbnail}`}
                       alt={vid.opponent}
                     />
                     <div className="duration-badge">
@@ -266,7 +332,7 @@ const App: FC = () => {
           {selectedVideo && selectedFolder && (
             <VideoOverlay
               video={selectedVideo}
-              folderName={selectedFolder.name}
+              folderPath={selectedFolder.folder_path || selectedFolder.name}
               sportPath={selectedSport?.path || ""}
               onClose={() => setSelectedVideo(null)}
             />
@@ -279,10 +345,10 @@ const App: FC = () => {
 
 const VideoOverlay: FC<{
   video: VideoMetadata;
-  folderName: string;
+  folderPath: string;
   sportPath: string;
   onClose: () => void;
-}> = ({ video, folderName, sportPath, onClose }) => {
+}> = ({ video, folderPath, sportPath, onClose }) => {
   const [currentMode, setCurrentMode] = useState<"60fps" | "120fps">(
     video.versions["60fps"] ? "60fps" : "120fps",
   );
@@ -292,43 +358,37 @@ const VideoOverlay: FC<{
   const [clipStart, setClipStart] = useState<number | null>(null);
   const [clipEnd, setClipEnd] = useState<number | null>(null);
   const [processing, setProcessing] = useState(false);
-  const [progress, setProgress] = useState(0);
   const [tags, setTags] = useState<Tag[]>(video.tags || []);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeJersey, setActiveJersey] = useState("");
 
-  // Persistence Mock: Load local tags if any
-  useEffect(() => {
-    const localTags = localStorage.getItem(`tags-${video.clip_num}-${video.date}`);
-    if (localTags) {
-      const parsed = JSON.parse(localTags);
-      setTags([...(video.tags || []), ...parsed]);
+  const saveTagsToServer = async (updatedTags: Tag[]) => {
+    try {
+      const response = await fetch('/api/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sportPath,
+          folderName: folderPath,
+          clipNum: video.clip_num,
+          date: video.date,
+          tags: updatedTags
+        })
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save tags');
+      }
+      video.tags = updatedTags;
+      setTags(updatedTags);
+    } catch (err) {
+      console.error('Error saving tags:', err);
+      alert(`Failed to save tags to server: ${err instanceof Error ? err.message : 'Unknown error'}`);
     }
-  }, [video]);
-
-  const saveLocalTag = (newTag: Tag) => {
-    const localOnly = tags.filter(t => !video.tags?.find(vt => vt.id === t.id));
-    const updated = [...localOnly, newTag];
-    localStorage.setItem(`tags-${video.clip_num}-${video.date}`, JSON.stringify(updated));
-    setTags([...(video.tags || []), ...updated]);
   };
 
-  const ffmpegRef = useRef<FFmpeg | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const targetSeekTime = useRef<number | null>(null);
-
-  const loadFFmpeg = async () => {
-    if (ffmpegRef.current) return ffmpegRef.current;
-    const baseURL = "https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
-    const ffmpeg = new FFmpeg();
-    ffmpeg.on("progress", ({ progress }) => {
-      setProgress(Math.round(progress * 100));
-    });
-    await ffmpeg.load({
-      coreURL: await toBlobURL(`${baseURL}/ffmpeg-core.js`, "text/javascript"),
-      wasmURL: await toBlobURL(`${baseURL}/ffmpeg-core.wasm`, "application/wasm"),
-    });
-    ffmpegRef.current = ffmpeg;
-    return ffmpeg;
-  };
 
   const handleSaveClip = async () => {
     if (clipStart === null || clipEnd === null) return;
@@ -340,50 +400,42 @@ const VideoOverlay: FC<{
 
     setProcessing(true);
     try {
-      const ffmpeg = await loadFFmpeg();
-      const videoUrl = `${MEDIA_ROOT}/${sportPath}/${folderName}/${video.versions[currentMode]?.filename}`;
+      const response = await fetch('/api/clip', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sportPath,
+          folderName: folderPath,
+          filename: video.versions[currentMode]?.filename,
+          start,
+          duration
+        })
+      });
 
-      await ffmpeg.writeFile("input.mp4", await fetchFile(videoUrl));
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to create clip');
+      }
 
-      await ffmpeg.exec([
-        "-ss",
-        start.toString(),
-        "-i",
-        "input.mp4",
-        "-t",
-        duration.toString(),
-        "-c:v",
-        "libx264",
-        "-preset",
-        "ultrafast",
-        "-crf",
-        "23",
-        "-c:a",
-        "copy",
-        "output.mp4",
-      ]);
-
-      const data = await ffmpeg.readFile("output.mp4");
-      const url = URL.createObjectURL(
-        new Blob([(data as Uint8Array).buffer], { type: "video/mp4" }),
-      );
-
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `clip_${video.opponent}_${video.clip_num}.mp4`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-
+      // Download the result
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `clip_${video.clip_num}_${Math.floor(start)}s.mp4`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
       setIsClipping(false);
       setClipStart(null);
       setClipEnd(null);
     } catch (err) {
-      console.error("FFmpeg Error:", err);
-      alert("Failed to create clip. Please try again.");
+      console.error('Error creating clip:', err);
+      alert(`Failed to create clip: ${err instanceof Error ? err.message : 'Unknown error'}`);
     } finally {
       setProcessing(false);
-      setProgress(0);
     }
   };
 
@@ -398,9 +450,15 @@ const VideoOverlay: FC<{
       label,
       time: referenceTime,
       type,
+      jerseyNumber: activeJersey || undefined,
     };
 
-    saveLocalTag(newTag);
+    saveTagsToServer([...tags, newTag]);
+  };
+
+  const removeTag = (id: string) => {
+    const updated = tags.filter(t => t.id !== id);
+    saveTagsToServer(updated);
   };
 
   const seekToTag = (tag: Tag) => {
@@ -408,6 +466,17 @@ const VideoOverlay: FC<{
     const stretch = video.versions[currentMode].stretch_factor;
     videoRef.current.currentTime = tag.time * stretch;
     videoRef.current.play();
+  };
+
+  const handleFullscreen = () => {
+    if (!videoRef.current) return;
+    if (videoRef.current.requestFullscreen) {
+      videoRef.current.requestFullscreen();
+    } else if ((videoRef.current as any).webkitRequestFullscreen) {
+      (videoRef.current as any).webkitRequestFullscreen();
+    } else if ((videoRef.current as any).msRequestFullscreen) {
+      (videoRef.current as any).msRequestFullscreen();
+    }
   };
 
   const availableVersions = Object.keys(video.versions);
@@ -427,6 +496,10 @@ const VideoOverlay: FC<{
 
     const factor = newStretch / oldStretch;
     const newTime = oldTime * factor;
+
+    // Sync clip markers
+    if (clipStart !== null) setClipStart(clipStart * factor);
+    if (clipEnd !== null) setClipEnd(clipEnd * factor);
 
     setCurrentMode(mode);
     targetSeekTime.current = newTime;
@@ -451,9 +524,10 @@ const VideoOverlay: FC<{
           <div className="video-wrapper">
             <video
               ref={videoRef}
-              src={`${MEDIA_ROOT}/${sportPath}/${folderName}/${video.versions[currentMode]?.filename}`}
+              src={`${MEDIA_ROOT}/${sportPath}/${folderPath}/${video.versions[currentMode]?.filename}`}
               controls
               autoPlay
+              playsInline
               onLoadedMetadata={handleLoadedMetadata}
               onPlay={() => setPlaying(true)}
               onPause={() => setPlaying(false)}
@@ -488,6 +562,14 @@ const VideoOverlay: FC<{
             )}
 
             <div className="action-buttons">
+              <button
+                className="action-btn fullscreen-btn mobile-only-btn"
+                onClick={handleFullscreen}
+                title="Fullscreen"
+              >
+                <Maximize size={20} />
+              </button>
+
               <div className="clip-tool-container">
                 {!isClipping ? (
                   <button
@@ -534,7 +616,7 @@ const VideoOverlay: FC<{
                           </>
                         ) : (
                           <>
-                            <Check size={18} /> Save {formatDuration(Math.abs(clipEnd - clipStart))} Clip
+                            <Check size={18} /> Export Highlight ({formatDuration(Math.abs(clipEnd - clipStart))})
                           </>
                         )}
                       </button>
@@ -560,7 +642,7 @@ const VideoOverlay: FC<{
                   className="download-btn"
                   onClick={() => setShowDownload(!showDownload)}
                 >
-                  <Download size={20} /> Download <ChevronDown size={16} />
+                  <Download size={20} /> Full Video <ChevronDown size={16} />
                 </button>
                 {showDownload && (
                   <div className="dropdown-menu">
@@ -570,7 +652,7 @@ const VideoOverlay: FC<{
                         className="dropdown-item"
                         onClick={() => {
                           window.open(
-                            `${MEDIA_ROOT}/${sportPath}/${folderName}/${video.versions[v].filename}`,
+                            `${MEDIA_ROOT}/${sportPath}/${folderPath}/${video.versions[v].filename}`,
                             "_blank",
                           );
                           setShowDownload(false);
@@ -624,11 +706,42 @@ const VideoOverlay: FC<{
               </div>
             </div>
 
+            <div className="tag-controls">
+              <div className="jersey-input-wrapper">
+                <span>Jersey #</span>
+                <input
+                  type="text"
+                  placeholder="--"
+                  value={activeJersey}
+                  onChange={(e) => setActiveJersey(e.target.value)}
+                  className="jersey-input"
+                />
+              </div>
+              <div className="search-input-wrapper">
+                <Search size={16} />
+                <input
+                  type="text"
+                  placeholder="Search highlights..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="tag-search"
+                />
+              </div>
+            </div>
+
             <div className="tag-list">
               {tags.length === 0 ? (
                 <p className="no-tags">No tags yet. Add one during playback!</p>
               ) : (
                 tags
+                  .filter(tag => {
+                    if (!searchTerm) return true;
+                    const search = searchTerm.toLowerCase();
+                    return (
+                      tag.label.toLowerCase().includes(search) ||
+                      (tag.jerseyNumber && tag.jerseyNumber.includes(search))
+                    );
+                  })
                   .sort((a, b) => a.time - b.time)
                   .map((tag) => (
                     <div
@@ -637,7 +750,12 @@ const VideoOverlay: FC<{
                       onClick={() => seekToTag(tag)}
                     >
                       <div className="tag-info">
-                        <span className="tag-label">{tag.label}</span>
+                        <div className="tag-label-row">
+                          <span className="tag-label">{tag.label}</span>
+                          {tag.jerseyNumber && (
+                            <span className="tag-jersey">#{tag.jerseyNumber}</span>
+                          )}
+                        </div>
                         <span className="tag-time">
                           {formatDuration(
                             tag.time *
@@ -645,11 +763,22 @@ const VideoOverlay: FC<{
                           )}
                         </span>
                       </div>
-                      <div className="tag-icon-mini">
-                        {tag.type === "goal" && <Trophy size={12} />}
-                        {tag.type === "play" && <Zap size={12} />}
-                        {tag.type === "save" && <Shield size={12} />}
-                        {tag.type === "other" && <Star size={12} />}
+                      <div className="tag-actions">
+                        <div className="tag-icon-mini">
+                          {tag.type === "goal" && <Trophy size={12} />}
+                          {tag.type === "play" && <Zap size={12} />}
+                          {tag.type === "save" && <Shield size={12} />}
+                          {tag.type === "other" && <Star size={12} />}
+                        </div>
+                        <button 
+                          className="tag-delete"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            removeTag(tag.id);
+                          }}
+                        >
+                          <X size={12} />
+                        </button>
                       </div>
                     </div>
                   ))
