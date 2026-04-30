@@ -982,6 +982,102 @@ main.content {
   to { transform: rotate(360deg); }
 }
 
+.clip-timeline-container {
+  position: absolute;
+  bottom: 60px; /* Above vidstack default controls */
+  left: 20px;
+  right: 20px;
+  height: 40px;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  pointer-events: auto;
+}
+
+.clip-timeline-track {
+  position: relative;
+  width: 100%;
+  height: 10px;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 5px;
+  backdrop-filter: blur(4px);
+}
+
+.clip-timeline-selection {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  background: var(--accent);
+  border-radius: 5px;
+  opacity: 0.8;
+  box-shadow: 0 0 10px rgba(255, 203, 33, 0.4);
+}
+
+.clip-timeline-handle {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 28px;
+  background: #fff;
+  border-radius: 4px;
+  cursor: ew-resize;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.6);
+  touch-action: none;
+  border: 1px solid rgba(0,0,0,0.1);
+  transition: transform 0.1s;
+}
+
+.clip-timeline-handle:hover {
+  transform: scale(1.1);
+}
+
+.clip-timeline-handle.start-handle {
+  transform: translate(-50%, -50%);
+}
+.clip-timeline-handle.start-handle:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.clip-timeline-handle.end-handle {
+  transform: translate(50%, -50%);
+}
+.clip-timeline-handle.end-handle:hover {
+  transform: translate(50%, -50%) scale(1.1);
+}
+
+.handle-line {
+  width: 2px;
+  height: 14px;
+  background: #ccc;
+  border-radius: 1px;
+}
+
+.handle-time {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(0,0,0,0.85);
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.clip-timeline-handle:hover .handle-time,
+.clip-timeline-handle:active .handle-time {
+  opacity: 1;
+}
+
 .clip-details h2 {
   font-size: 1.8rem;
   font-weight: 800;

@@ -516,6 +516,7 @@ const VideoOverlay: FC<{
   const [isClipping, setIsClipping] = useState(false);
   const [clipStart, setClipStart] = useState<number | null>(null);
   const [clipEnd, setClipEnd] = useState<number | null>(null);
+  const [videoDuration, setVideoDuration] = useState<number>(0);
   const [processing, setProcessing] = useState(false);
   const [tags, setTags] = useState<Tag[]>(video.tags || []);
   const [searchTerm, setSearchTerm] = useState("");
@@ -664,10 +665,13 @@ const VideoOverlay: FC<{
 
   const handleLoadedMetadata = () => {
     const v = videoRef.current;
-    if (v && targetSeekTime.current !== null) {
-      v.currentTime = targetSeekTime.current;
-      targetSeekTime.current = null;
-      if (playing) v.play();
+    if (v) {
+      setVideoDuration(v.state.duration || 0);
+      if (targetSeekTime.current !== null) {
+        v.currentTime = targetSeekTime.current;
+        targetSeekTime.current = null;
+        if (playing) v.play();
+      }
     }
   };
 
@@ -718,7 +722,13 @@ const VideoOverlay: FC<{
                   {!isClipping ? (
                     <button
                       className="action-btn clip-btn"
-                      onClick={(e) => { e.stopPropagation(); setIsClipping(true); }}
+                      onClick={(e) => { 
+                        e.stopPropagation(); 
+                        setIsClipping(true);
+                        const dur = videoRef.current?.state.duration || videoDuration || 1;
+                        if (clipStart === null) setClipStart(0);
+                        if (clipEnd === null) setClipEnd(dur);
+                      }}
                     >
                       <Scissors size={18} /> Clip
                     </button>
@@ -764,6 +774,22 @@ const VideoOverlay: FC<{
                   )}
                 </div>
               </div>
+              
+              {isClipping && videoDuration > 0 && clipStart !== null && clipEnd !== null && (
+                <ClipTimeline
+                  duration={videoDuration}
+                  clipStart={clipStart}
+                  clipEnd={clipEnd}
+                  onChangeStart={(val) => {
+                    setClipStart(val);
+                    if (videoRef.current) videoRef.current.currentTime = val;
+                  }}
+                  onChangeEnd={(val) => {
+                    setClipEnd(val);
+                    if (videoRef.current) videoRef.current.currentTime = val;
+                  }}
+                />
+              )}
             </MediaPlayer>
           </div>
 
@@ -944,6 +970,76 @@ const VideoOverlay: FC<{
               </button>
             )}
           </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const ClipTimeline: FC<{
+  duration: number;
+  clipStart: number;
+  clipEnd: number;
+  onChangeStart: (val: number) => void;
+  onChangeEnd: (val: number) => void;
+}> = ({ duration, clipStart, clipEnd, onChangeStart, onChangeEnd }) => {
+  const trackRef = useRef<HTMLDivElement>(null);
+
+  const handlePointerDown = (type: 'start' | 'end') => (e: React.PointerEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const track = trackRef.current;
+    if (!track) return;
+    const rect = track.getBoundingClientRect();
+
+    const onPointerMove = (moveEv: PointerEvent) => {
+      let x = moveEv.clientX - rect.left;
+      x = Math.max(0, Math.min(x, rect.width));
+      const newTime = (x / rect.width) * duration;
+      
+      if (type === 'start') {
+        onChangeStart(Math.min(newTime, clipEnd - 0.1));
+      } else {
+        onChangeEnd(Math.max(newTime, clipStart + 0.1));
+      }
+    };
+
+    const onPointerUp = () => {
+      document.removeEventListener('pointermove', onPointerMove);
+      document.removeEventListener('pointerup', onPointerUp);
+    };
+
+    document.addEventListener('pointermove', onPointerMove);
+    document.addEventListener('pointerup', onPointerUp);
+  };
+
+  if (duration <= 0) return null;
+
+  const leftPct = (clipStart / duration) * 100;
+  const rightPct = ((duration - clipEnd) / duration) * 100;
+
+  return (
+    <div className="clip-timeline-container" onClick={(e) => e.stopPropagation()}>
+      <div className="clip-timeline-track" ref={trackRef}>
+        <div 
+          className="clip-timeline-selection"
+          style={{ left: `${leftPct}%`, right: `${rightPct}%` }}
+        />
+        <div 
+          className="clip-timeline-handle start-handle"
+          style={{ left: `${leftPct}%` }}
+          onPointerDown={handlePointerDown('start')}
+        >
+          <div className="handle-line" />
+          <div className="handle-time">{formatDuration(clipStart)}</div>
+        </div>
+        <div 
+          className="clip-timeline-handle end-handle"
+          style={{ right: `${rightPct}%` }}
+          onPointerDown={handlePointerDown('end')}
+        >
+          <div className="handle-line" />
+          <div className="handle-time">{formatDuration(clipEnd)}</div>
         </div>
       </div>
     </div>
