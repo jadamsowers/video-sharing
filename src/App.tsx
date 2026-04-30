@@ -1,5 +1,9 @@
 import type { FC } from "react";
 import { useState, useEffect, useRef, useCallback } from "react";
+import '@vidstack/react/player/styles/default/theme.css';
+import '@vidstack/react/player/styles/default/layouts/video.css';
+import { MediaPlayer, MediaPlayerInstance, MediaProvider } from '@vidstack/react';
+import { defaultLayoutIcons, DefaultVideoLayout } from '@vidstack/react/player/layouts/default';
 import {
   Folder,
   Video,
@@ -543,7 +547,7 @@ const VideoOverlay: FC<{
     }
   };
 
-  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoRef = useRef<MediaPlayerInstance>(null);
   const targetSeekTime = useRef<number | null>(null);
 
   const handleSaveClip = async () => {
@@ -634,13 +638,7 @@ const VideoOverlay: FC<{
 
   const handleFullscreen = () => {
     if (!videoRef.current) return;
-    if (videoRef.current.requestFullscreen) {
-      videoRef.current.requestFullscreen();
-    } else if ((videoRef.current as any).webkitRequestFullscreen) {
-      (videoRef.current as any).webkitRequestFullscreen();
-    } else if ((videoRef.current as any).msRequestFullscreen) {
-      (videoRef.current as any).msRequestFullscreen();
-    }
+    videoRef.current.enterFullscreen();
   };
 
   const availableVersions = Object.keys(video.versions);
@@ -686,16 +684,22 @@ const VideoOverlay: FC<{
       <div className="player-main">
         <div className="player-content">
           <div className="video-wrapper">
-            <video
+            <MediaPlayer
               ref={videoRef}
+              title={`Clip #${video.clip_num} vs ${video.opponent}`}
               src={`${MEDIA_ROOT}/${sportPath}/${folderPath}/${video.versions[currentMode]?.filename}`}
-              controls
               autoPlay
               playsInline
-              onLoadedMetadata={handleLoadedMetadata}
+              onCanPlay={handleLoadedMetadata}
               onPlay={() => setPlaying(true)}
               onPause={() => setPlaying(false)}
-            />
+            >
+              <MediaProvider />
+              <DefaultVideoLayout 
+                thumbnails={`${MEDIA_ROOT}/${sportPath}/${folderPath}/${video.versions[currentMode]?.filename.replace('.mp4', '_thumbnails.vtt')}`} 
+                icons={defaultLayoutIcons} 
+              />
+            </MediaPlayer>
           </div>
 
           <div className="player-controls">
