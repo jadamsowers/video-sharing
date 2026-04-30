@@ -398,6 +398,12 @@ const VideoOverlay: FC<{
 
     if (duration <= 0) return;
 
+    const filename = video.versions[currentMode]?.filename;
+    if (!filename) {
+      alert('Failed to create clip: No video file found for the current mode.');
+      return;
+    }
+
     setProcessing(true);
     try {
       const response = await fetch('/api/clip', {
@@ -406,7 +412,7 @@ const VideoOverlay: FC<{
         body: JSON.stringify({
           sportPath,
           folderName: folderPath,
-          filename: video.versions[currentMode]?.filename,
+          filename,
           start,
           duration
         })
@@ -417,17 +423,35 @@ const VideoOverlay: FC<{
         throw new Error(errorData.error || 'Failed to create clip');
       }
 
-      // Download the result
+      const downloadName = `clip_${video.clip_num}_${Math.floor(start)}s.mp4`;
       const blob = await response.blob();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `clip_${video.clip_num}_${Math.floor(start)}s.mp4`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-      
+
+      // iOS Safari does not support URL.createObjectURL for programmatic downloads.
+      // Fall back to a FileReader-based data URL approach.
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
+      if (isIOS) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const dataUrl = reader.result as string;
+          const a = document.createElement('a');
+          a.href = dataUrl;
+          a.download = downloadName;
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+        };
+        reader.readAsDataURL(blob);
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = downloadName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+      }
+
       setIsClipping(false);
       setClipStart(null);
       setClipEnd(null);
