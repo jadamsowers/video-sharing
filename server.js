@@ -108,7 +108,7 @@ app.use('/media', express.static(MEDIA_ROOT));
 app.use(express.static(path.join(__dirname, 'dist')));
 
 // Fallback for SPA (Single Page App)
-app.get('*', (req, res) => {
+app.get('(.*)', (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
 });
 
