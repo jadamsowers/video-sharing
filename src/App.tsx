@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import {
   Folder,
   Video,
@@ -19,10 +19,32 @@ import {
   Search,
   Maximize,
   ChevronLeft,
+  Share2,
 } from "lucide-react";
 import type { VideoMetadata, FolderManifest, Sport, Tag } from "./types";
 
 const MEDIA_ROOT = "/media";
+
+/** Parse a pathname like /boys-lacrosse/douglas-freeman/clip015 */
+function parseDeepLink(pathname: string): { sportPath: string; folderPath: string; clipNum: string } | null {
+  // Strip leading slash and split
+  const parts = pathname.replace(/^\//, "").split("/").filter(Boolean);
+  // Expect exactly 3 segments where last starts with 'clip'
+  if (parts.length === 3 && parts[2].startsWith("clip")) {
+    return {
+      sportPath: parts[0],
+      folderPath: parts[1],
+      clipNum: parts[2].slice(4), // strip 'clip' prefix
+    };
+  }
+  return null;
+}
+
+/** Build a shareable URL for a clip */
+function buildClipUrl(sportPath: string, folderPath: string, clipNum: string): string {
+  const folder = folderPath.includes("/") ? folderPath.split("/").pop()! : folderPath;
+  return `${window.location.origin}/${sportPath}/${folder}/clip${clipNum}`;
+}
 
 const formatDuration = (seconds: number) => {
   const mins = Math.floor(seconds / 60);
@@ -44,6 +66,9 @@ const App: FC = () => {
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [mobileNavLevel, setMobileNavLevel] = useState<0 | 1 | 2>(0); // 0: Sports, 1: Folders, 2: Videos
+
+  // Deep-link: parsed from the current URL on first load
+  const deepLink = useRef(parseDeepLink(window.location.pathname));
 
   // Load sports list once
   useEffect(() => {
@@ -85,8 +110,10 @@ const App: FC = () => {
         setSports(sportsList);
 
         if (sportsList.length > 0) {
-          const firstWithContent = sportsList.find((s: Sport) => s.has_content);
-          setSelectedSport(firstWithContent || sportsList[0]);
+          // If a deep-link is present, prefer that sport; otherwise pick first with content
+          const dl = deepLink.current;
+          const linked = dl ? sportsList.find((s: Sport) => s.path === dl.sportPath) : null;
+          setSelectedSport(linked || sportsList.find((s: Sport) => s.has_content) || sportsList[0]);
         }
       } catch (err) {
         console.error("Failed to load sports:", err);
@@ -136,6 +163,30 @@ const App: FC = () => {
         ) as FolderManifest[];
 
         setFolders(validFolders);
+
+        // Resolve deep-link folder + clip if applicable
+        const dl = deepLink.current;
+        if (dl && selectedSport?.path === dl.sportPath) {
+          const linkedFolder = validFolders.find(
+            (f) => (f.folder_path || f.name).split("/").pop() === dl.folderPath,
+          );
+          if (linkedFolder) {
+            setSelectedFolder(linkedFolder);
+            setMobileNavLevel(2);
+            const linkedVideo = linkedFolder.videos.find(
+              (v) => v.clip_num === dl.clipNum,
+            );
+            if (linkedVideo) {
+              setSelectedVideo(linkedVideo);
+              // Clear deep-link so subsequent navigation is normal
+              deepLink.current = null;
+              history.replaceState(null, "",
+                buildClipUrl(dl.sportPath, dl.folderPath, dl.clipNum));
+            }
+            return;
+          }
+        }
+
         if (validFolders.length > 0) {
           setSelectedFolder(validFolders[0]);
         } else {
@@ -300,7 +351,13 @@ const App: FC = () => {
                 <div
                   key={`${vid.clip_num}-${vid.date}`}
                   className="video-card"
-                  onClick={() => setSelectedVideo(vid)}
+                  onClick={() => {
+                    setSelectedVideo(vid);
+                    // Push shareable URL
+                    const fp = selectedFolder?.folder_path || selectedFolder?.name || "";
+                    history.pushState(null, "",
+                      buildClipUrl(selectedSport?.path || "", fp, vid.clip_num));
+                  }}
                 >
                   <div className="thumbnail-container">
                     <img
@@ -334,7 +391,10 @@ const App: FC = () => {
               video={selectedVideo}
               folderPath={selectedFolder.folder_path || selectedFolder.name}
               sportPath={selectedSport?.path || ""}
-              onClose={() => setSelectedVideo(null)}
+              onClose={() => {
+                setSelectedVideo(null);
+                history.pushState(null, "", "/");
+              }}
             />
           )}
         </main>
@@ -349,6 +409,22 @@ const VideoOverlay: FC<{
   sportPath: string;
   onClose: () => void;
 }> = ({ video, folderPath, sportPath, onClose }) => {
+  const [shareCopied, setShareCopied] = useState(false);
+
+  const handleShare = useCallback(async () => {
+    const url = buildClipUrl(sportPath, folderPath, video.clip_num);
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `Clip #${video.clip_num} vs ${video.opponent}`, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }
+    } catch {
+      // User cancelled share sheet – ignore
+    }
+  }, [sportPath, folderPath, video.clip_num, video.opponent]);
   const [currentMode, setCurrentMode] = useState<"60fps" | "120fps">(
     video.versions["60fps"] ? "60fps" : "120fps",
   );
@@ -592,6 +668,14 @@ const VideoOverlay: FC<{
                 title="Fullscreen"
               >
                 <Maximize size={20} />
+              </button>
+
+              <button
+                className={`action-btn share-btn ${shareCopied ? "copied" : ""}`}
+                onClick={handleShare}
+                title="Share clip link"
+              >
+                {shareCopied ? <><Check size={20} /> Copied!</> : <><Share2 size={20} /> Share</>}
               </button>
 
               <div className="clip-tool-container">

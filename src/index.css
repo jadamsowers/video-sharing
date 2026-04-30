@@ -729,6 +729,16 @@ main.content {
   border-color: var(--primary);
 }
 
+.share-btn {
+  transition: all 0.25s ease;
+}
+
+.share-btn.copied {
+  background: rgba(46, 204, 113, 0.2);
+  border-color: #2ecc71;
+  color: #2ecc71;
+}
+
 .download-dropdown {
   position: relative;
 }
