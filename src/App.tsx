@@ -710,25 +710,6 @@ const VideoOverlay: FC<{
                 icons={defaultLayoutIcons} 
               />
               <div className="vidstack-top-toolbar">
-                {video.versions["60fps"] && video.versions["120fps"] && (
-                  <div className="toggle-group">
-                    <button
-                      className={`toggle-btn ${currentMode === "60fps" ? "active" : ""}`}
-                      onClick={(e) => { e.stopPropagation(); switchToMode("60fps"); }}
-                      disabled={!video.versions["60fps"]}
-                    >
-                      Regular
-                    </button>
-                    <button
-                      className={`toggle-btn ${currentMode === "120fps" ? "active" : ""}`}
-                      onClick={(e) => { e.stopPropagation(); switchToMode("120fps"); }}
-                      disabled={!video.versions["120fps"]}
-                    >
-                      Slow-mo
-                    </button>
-                  </div>
-                )}
-                
                 <div className="clip-tool-container">
                   {!isClipping ? (
                     <button
@@ -800,6 +781,19 @@ const VideoOverlay: FC<{
                     if (videoRef.current) videoRef.current.currentTime = val;
                   }}
                 />
+              )}
+              
+              {video.versions["120fps"] && (
+                <button 
+                  className={`slomo-bottom-toggle ${currentMode === "120fps" ? "active" : ""}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    switchToMode(currentMode === "120fps" ? "60fps" : "120fps");
+                  }}
+                  title="Toggle Slo-mo"
+                >
+                  {currentMode === "120fps" ? "Slo-mo" : "Regular"}
+                </button>
               )}
             </MediaPlayer>
           </div>

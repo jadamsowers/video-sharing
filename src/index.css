@@ -777,32 +777,6 @@ main.content {
   }
 }
 
-.toggle-group {
-  display: flex;
-  background: var(--secondary);
-  padding: 5px;
-  border-radius: 40px;
-  border: 1px solid var(--glass-border);
-}
-
-.toggle-btn {
-  padding: 12px 28px;
-  border-radius: 35px;
-  border: none;
-  background: transparent;
-  color: var(--muted);
-  font-family: inherit;
-  font-weight: 700;
-  cursor: pointer;
-  transition: all 0.3s ease;
-}
-
-.toggle-btn.active {
-  background: var(--primary);
-  color: #fff;
-  box-shadow: 0 4px 15px rgba(37, 150, 190, 0.5);
-}
-
 .action-buttons {
   display: flex;
   align-items: center;
@@ -1323,16 +1297,6 @@ main.content {
     gap: 16px;
   }
 
-  .toggle-group {
-    justify-content: center;
-  }
-
-  .toggle-btn {
-    flex: 0 0 auto;
-    padding: 4px 6px;
-    font-size: 0.65rem;
-  }
-
   .vidstack-top-toolbar {
     top: 4px;
     left: 4px;
@@ -1392,6 +1356,55 @@ main.content {
     width: 100%;
     justify-content: center;
   }
+
+  .slomo-bottom-toggle {
+    bottom: 48px;
+    right: 12px;
+    padding: 4px 8px;
+    font-size: 0.7rem;
+  }
+}
+
+/* Vidstack custom overrides */
+vds-menu-item[aria-label*="Speed" i],
+vds-menu-item[aria-label*="speed" i],
+vds-menu-item[data-value="speed"],
+[data-value="speed"],
+.vds-menu-item[aria-label*="Speed" i] {
+  display: none !important;
+}
+
+.slomo-bottom-toggle {
+  position: absolute;
+  bottom: 56px; /* slightly above the very bottom controls */
+  right: 16px;
+  z-index: 50;
+  background: rgba(13, 17, 23, 0.8);
+  backdrop-filter: blur(4px);
+  border: 1px solid var(--glass-border);
+  color: #fff;
+  padding: 6px 12px;
+  border-radius: 40px;
+  font-family: inherit;
+  font-weight: 700;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  pointer-events: auto;
+}
+
+media-player:not([data-controls]) .slomo-bottom-toggle {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.slomo-bottom-toggle:hover {
+  background: var(--glass);
+}
+
+.slomo-bottom-toggle.active {
+  background: var(--primary);
+  border-color: var(--primary);
 }
 
 /* End of CSS */
