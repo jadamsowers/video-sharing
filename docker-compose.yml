@@ -6,8 +6,10 @@ services:
     environment:
       - PORT=80
       - MEDIA_ROOT=/media
+      - DATA_DIR=/data
     volumes:
       - ./media:/media:rw
+      - vault-data:/data
     networks:
       - wahsvault
     expose:
@@ -26,3 +28,6 @@ services:
 networks:
   wahsvault:
     driver: bridge
+
+volumes:
+  vault-data:

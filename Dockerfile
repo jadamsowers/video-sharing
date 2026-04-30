@@ -3,7 +3,10 @@ FROM node:20-slim AS builder
 
 WORKDIR /app
 
-# Install dependencies
+# Build tools needed for native addons (better-sqlite3)
+RUN apt-get update && apt-get install -y python3 make g++ && rm -rf /var/lib/apt/lists/*
+
+# Install dependencies (including native addon compilation)
 COPY package*.json ./
 RUN npm install
 
@@ -16,18 +19,20 @@ FROM node:20-slim
 
 WORKDIR /app
 
-# Install native ffmpeg
+# Install ffmpeg and sqlite3 runtime
 RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
 
-# Copy built assets and server files
+# Copy built assets, server, and pre-compiled node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/server.js ./
 COPY --from=builder /app/package*.json ./
+COPY --from=builder /app/node_modules ./node_modules
 
-# Install production dependencies only
-RUN npm install --production
+# Data directory for SQLite DB and saved clips
+ENV DATA_DIR=/data
+VOLUME ["/data"]
 
-# Expose port 80 (to match your existing nginx setup)
+# Expose port 80
 ENV PORT=80
 EXPOSE 80
 

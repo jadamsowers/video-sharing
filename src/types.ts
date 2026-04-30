@@ -37,3 +37,18 @@ export interface FolderManifest {
   videos: VideoMetadata[];
   folder_path?: string;
 }
+
+export interface SavedClip {
+  id: number;
+  filename: string;
+  sport_path: string;
+  folder_name: string;
+  source_clip: string;
+  opponent: string | null;
+  clip_date: string | null;
+  start_time: number;
+  duration: number;
+  label: string | null;
+  created_at: string;
+  url: string; // derived: /clips/<filename>
+}

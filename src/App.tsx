@@ -6,6 +6,7 @@ import {
   Download,
   X,
   ChevronDown,
+  ChevronUp,
   Info,
   Trophy,
   Menu,
@@ -20,8 +21,10 @@ import {
   Maximize,
   ChevronLeft,
   Share2,
+  Film,
+  Trash2,
 } from "lucide-react";
-import type { VideoMetadata, FolderManifest, Sport, Tag } from "./types";
+import type { VideoMetadata, FolderManifest, Sport, Tag, SavedClip } from "./types";
 
 const MEDIA_ROOT = "/media";
 
@@ -67,8 +70,24 @@ const App: FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [mobileNavLevel, setMobileNavLevel] = useState<0 | 1 | 2>(0); // 0: Sports, 1: Folders, 2: Videos
 
+  const [savedClips, setSavedClips] = useState<SavedClip[]>([]);
+  const [savedClipsOpen, setSavedClipsOpen] = useState(false);
+
   // Deep-link: parsed from the current URL on first load
   const deepLink = useRef(parseDeepLink(window.location.pathname));
+
+  const fetchSavedClips = useCallback(async () => {
+    try {
+      const res = await fetch('/api/clips');
+      if (!res.ok) return;
+      const data: Omit<SavedClip, 'url'>[] = await res.json();
+      setSavedClips(data.map(c => ({ ...c, url: `/clips/${c.filename}` })));
+    } catch {
+      // Non-critical — silently ignore
+    }
+  }, []);
+
+  useEffect(() => { fetchSavedClips(); }, [fetchSavedClips]);
 
   // Load sports list once
   useEffect(() => {
@@ -305,6 +324,65 @@ const App: FC = () => {
             </div>
           </header>
 
+          {/* Saved Clips Panel */}
+          {savedClips.length > 0 && (
+            <div className="saved-clips-panel">
+              <button
+                className="saved-clips-toggle"
+                onClick={() => setSavedClipsOpen(o => !o)}
+              >
+                <Film size={16} />
+                <span>Saved Highlights ({savedClips.length})</span>
+                {savedClipsOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </button>
+
+              {savedClipsOpen && (
+                <div className="saved-clips-list">
+                  {savedClips.map(clip => (
+                    <div key={clip.id} className="saved-clip-row">
+                      <div className="saved-clip-info">
+                        <span className="saved-clip-label">{clip.label || clip.filename}</span>
+                        <span className="saved-clip-meta">
+                          {clip.clip_date} &middot; {formatDuration(clip.duration)}
+                        </span>
+                      </div>
+                      <div className="saved-clip-actions">
+                        <a
+                          href={clip.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="clip-action-btn play-btn"
+                          title="Play"
+                        >
+                          <Video size={16} />
+                        </a>
+                        <a
+                          href={clip.url}
+                          download={clip.filename}
+                          className="clip-action-btn dl-btn"
+                          title="Download"
+                        >
+                          <Download size={16} />
+                        </a>
+                        <button
+                          className="clip-action-btn del-btn"
+                          title="Delete"
+                          onClick={async () => {
+                            if (!confirm('Delete this saved clip?')) return;
+                            await fetch(`/api/clips/${clip.id}`, { method: 'DELETE' });
+                            fetchSavedClips();
+                          }}
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Mobile Drill-down Menu */}
           <div className="mobile-drilldown">
             {mobileNavLevel === 0 && (
@@ -395,6 +473,7 @@ const App: FC = () => {
                 setSelectedVideo(null);
                 history.pushState(null, "", "/");
               }}
+              onClipSaved={fetchSavedClips}
             />
           )}
         </main>
@@ -408,7 +487,8 @@ const VideoOverlay: FC<{
   folderPath: string;
   sportPath: string;
   onClose: () => void;
-}> = ({ video, folderPath, sportPath, onClose }) => {
+  onClipSaved: () => void;
+}> = ({ video, folderPath, sportPath, onClose, onClipSaved }) => {
   const [shareCopied, setShareCopied] = useState(false);
 
   const handleShare = useCallback(async () => {
@@ -490,43 +570,27 @@ const VideoOverlay: FC<{
           folderName: folderPath,
           filename,
           start,
-          duration
+          duration,
+          opponent: video.opponent,
+          clipDate: video.date,
+          sourceClip: video.clip_num,
+          label: `Clip #${video.clip_num} vs ${video.opponent} @ ${formatDuration(start)}`,
         })
       });
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to create clip');
+        let errorMsg = `Server error (${response.status})`;
+        try {
+          const errorData = await response.json();
+          errorMsg = errorData.error || errorMsg;
+        } catch {
+          errorMsg = await response.text().catch(() => errorMsg);
+        }
+        throw new Error(errorMsg);
       }
 
-      const downloadName = `clip_${video.clip_num}_${Math.floor(start)}s.mp4`;
-      const blob = await response.blob();
-
-      // iOS Safari does not support URL.createObjectURL for programmatic downloads.
-      // Fall back to a FileReader-based data URL approach.
-      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
-      if (isIOS) {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const dataUrl = reader.result as string;
-          const a = document.createElement('a');
-          a.href = dataUrl;
-          a.download = downloadName;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-        };
-        reader.readAsDataURL(blob);
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = downloadName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-      }
+      // Clip saved on server — refresh the clips list
+      await onClipSaved();
 
       setIsClipping(false);
       setClipStart(null);
