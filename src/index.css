@@ -1301,6 +1301,11 @@ main.content {
     overflow-y: visible;
   }
 
+  .video-wrapper {
+    width: 95vw;
+    max-width: none;
+  }
+
   .player-sidebar {
     width: 100%;
     min-width: 0;
@@ -1324,19 +1329,18 @@ main.content {
 
   .toggle-btn {
     flex: 0 0 auto;
-    padding: 6px 10px;
-    font-size: 0.75rem;
+    padding: 4px 6px;
+    font-size: 0.65rem;
   }
 
   .vidstack-top-toolbar {
-    top: 6px;
-    left: 6px;
-    right: 6px;
-    gap: 6px;
+    top: 4px;
+    left: 4px;
+    right: 4px;
+    gap: 4px;
     justify-content: flex-start;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
+    flex-wrap: wrap;
+    overflow: visible;
   }
 
   .vidstack-top-toolbar::-webkit-scrollbar {
@@ -1348,13 +1352,13 @@ main.content {
   }
 
   .vidstack-top-toolbar .action-btn {
-    padding: 6px 10px;
-    font-size: 0.75rem;
+    padding: 4px 6px;
+    font-size: 0.65rem;
   }
   
   .vidstack-top-toolbar svg {
-    width: 14px;
-    height: 14px;
+    width: 12px;
+    height: 12px;
   }
 
   .clip-controls {
@@ -1363,25 +1367,25 @@ main.content {
   }
 
   .marker-btn {
-    padding: 4px 8px;
-    font-size: 0.7rem;
+    padding: 4px 6px;
+    font-size: 0.65rem;
   }
 
   .save-clip-btn {
-    padding: 4px 8px;
-    font-size: 0.7rem;
+    padding: 4px 6px;
+    font-size: 0.65rem;
   }
 
   .clip-timeline-container {
     bottom: 45px;
-    height: 30px;
-    left: 10px;
-    right: 10px;
+    height: 24px;
+    left: 8px;
+    right: 8px;
   }
 
   .clip-timeline-handle {
     width: 12px;
-    height: 24px;
+    height: 20px;
   }
 
   .download-btn {
