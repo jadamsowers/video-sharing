@@ -52,6 +52,13 @@ db.exec(`
   );
 `);
 
+// Migration: Add category column if it doesn't exist
+try {
+  db.exec("ALTER TABLE tags ADD COLUMN category TEXT;");
+} catch (e) {
+  // Column already exists or table doesn't exist yet (handled by CREATE TABLE)
+}
+
 const insertClip = db.prepare(`
   INSERT INTO saved_clips (filename, sport_path, folder_name, source_clip, opponent, clip_date, start_time, duration, label)
   VALUES (@filename, @sportPath, @folderName, @sourceClip, @opponent, @clipDate, @startTime, @duration, @label)
