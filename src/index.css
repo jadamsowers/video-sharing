@@ -1358,10 +1358,10 @@ main.content {
   }
 
   .slomo-bottom-toggle {
-    bottom: 48px;
-    right: 12px;
+    bottom: 12px;
+    right: 48px;
     padding: 4px 8px;
-    font-size: 0.7rem;
+    font-size: 0.65rem;
   }
 }
 
@@ -1370,32 +1370,39 @@ vds-menu-item[aria-label*="Speed" i],
 vds-menu-item[aria-label*="speed" i],
 vds-menu-item[data-value="speed"],
 [data-value="speed"],
-.vds-menu-item[aria-label*="Speed" i] {
+.vds-menu-item[aria-label*="Speed" i],
+vds-menu[aria-label="Settings"],
+.vds-menu[aria-label="Settings"],
+vds-menu-button[aria-label="Settings"],
+.vds-settings-menu,
+.vds-menu-button[aria-label="Settings"] {
   display: none !important;
 }
 
 .slomo-bottom-toggle {
   position: absolute;
-  bottom: 56px; /* slightly above the very bottom controls */
-  right: 16px;
-  z-index: 50;
-  background: rgba(13, 17, 23, 0.8);
-  backdrop-filter: blur(4px);
-  border: 1px solid var(--glass-border);
+  bottom: 20px; /* Align with bottom controls */
+  right: 60px; /* Position where gear/fullscreen are */
+  z-index: 1000; /* Ensure it's above DefaultVideoLayout */
+  background: rgba(30, 30, 30, 0.9);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   color: #fff;
-  padding: 6px 12px;
-  border-radius: 40px;
+  padding: 6px 14px;
+  border-radius: 6px;
   font-family: inherit;
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   cursor: pointer;
-  transition: all 0.2s;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
 media-player:not([data-controls]) .slomo-bottom-toggle {
   opacity: 0;
   pointer-events: none;
+  transform: translateY(10px);
 }
 
 .slomo-bottom-toggle:hover {
