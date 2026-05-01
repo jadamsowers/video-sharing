@@ -22,7 +22,6 @@ import {
   Shield,
   Zap,
   Search,
-  ChevronLeft,
   Share2,
   Film,
   Trash2,
@@ -348,26 +347,7 @@ const App: FC = () => {
         </aside>
 
         <main className="content">
-          <header className="header">
-            <div className="header-nav">
-              {mobileNavLevel > 0 && (
-                <button 
-                  className="mobile-back-btn" 
-                  onClick={() => setMobileNavLevel((prev) => (prev - 1) as any)}
-                >
-                  <ChevronLeft size={24} />
-                </button>
-              )}
-              <div>
-                <h1>{mobileNavLevel === 0 ? "Sports" : mobileNavLevel === 1 ? (selectedSport?.name || "Collections") : (selectedFolder?.name || "Clips")}</h1>
-                <p>
-                  {mobileNavLevel === 0 ? `${sports.length} active programs` : 
-                   mobileNavLevel === 1 ? `${folders.length} collections` : 
-                   `${selectedFolder?.videos.length || 0} videos`}
-                </p>
-              </div>
-            </div>
-          </header>
+
 
           {/* Saved Clips Panel */}
           {savedClips.length > 0 && (
@@ -499,9 +479,20 @@ const App: FC = () => {
                       <option value="team">Team</option>
                     </select>
                   </div>
-                  <button className="tag-search-btn" onClick={searchSeasonTags}>
-                    Search
-                  </button>
+                  <div className="tag-search-actions">
+                    <button className="tag-search-btn" onClick={searchSeasonTags}>
+                      Search
+                    </button>
+                    <button 
+                      className="tag-clear-btn" 
+                      onClick={() => {
+                        setTagFilters({ jerseyNum: "", type: "", category: "" });
+                        setTagResults([]);
+                      }}
+                    >
+                      Clear
+                    </button>
+                  </div>
                 </div>
 
                 <div className="tag-results-list">
@@ -808,9 +799,16 @@ const VideoOverlay: FC<{
 
   return (
     <div className="player-overlay">
-      <button className="player-close" onClick={onClose}>
-        <X />
-      </button>
+      <div className="player-header">
+        <div className="player-title">
+          <h2>Clip #{video.clip_num} vs {video.opponent}</h2>
+          <p>{video.date}</p>
+        </div>
+        <button className="player-close" onClick={onClose}>
+          <X size={20} />
+          <span>Back to Game</span>
+        </button>
+      </div>
       <div className="player-main">
         <div className="player-content">
           <div className="video-wrapper">
@@ -940,13 +938,6 @@ const VideoOverlay: FC<{
           </div>
 
           <div className="player-controls">
-            <div className="clip-details">
-              <h2>
-                vs {video.opponent} (#{video.clip_num})
-              </h2>
-              <p>{video.date}</p>
-            </div>
-
             <div className="action-buttons">
               <button
                 className={`action-btn share-btn ${shareCopied ? "copied" : ""}`}

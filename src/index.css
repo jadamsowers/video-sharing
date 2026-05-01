@@ -394,17 +394,17 @@ main.content {
 
 /* Video Player Layer */
 .player-overlay {
-  position: fixed;
+  position: absolute;
   top: 0;
   left: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(13, 17, 23, 0.98);
-  backdrop-filter: blur(20px);
-  z-index: 3000;
+  width: 100%;
+  height: 100%;
+  background: rgba(13, 17, 23, 0.99);
+  backdrop-filter: blur(24px);
+  z-index: 100;
   display: flex;
   flex-direction: column;
-  padding: 40px;
+  padding: 24px;
 }
 
 @media (max-width: 768px) {
@@ -413,32 +413,45 @@ main.content {
   }
 }
 
-.player-close {
-  position: absolute;
-  top: 40px;
-  right: 40px;
-  background: var(--glass);
-  border: none;
-  color: #fff;
-  padding: 12px;
-  border-radius: 50%;
-  cursor: pointer;
-  transition: background 0.2s;
-  z-index: 3001;
+.player-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-@media (max-width: 768px) {
-  .player-close {
-    top: 10px;
-    right: 10px;
-    background: rgba(0, 0, 0, 0.5);
-    padding: 8px;
-  }
+.player-title h2 {
+  font-size: 1.5rem;
+  font-weight: 800;
+  margin-bottom: 4px;
+}
+
+.player-title p {
+  color: var(--muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.player-close {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--primary);
+  border: none;
+  color: #fff;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
 }
 
 .player-close:hover {
   background: var(--accent);
   color: #000;
+  transform: translateY(-2px);
 }
 
 .player-main {
@@ -1521,6 +1534,28 @@ media-player:not([data-controls]) .slomo-bottom-toggle {
   color: var(--foreground);
   font-family: inherit;
   font-weight: 600;
+}
+
+.tag-search-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.tag-clear-btn {
+  background: var(--glass);
+  color: var(--foreground);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  height: 42px;
+}
+
+.tag-clear-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--muted);
 }
 
 .tag-search-btn {
