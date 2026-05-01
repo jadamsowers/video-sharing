@@ -1407,4 +1407,45 @@ media-player:not([data-controls]) .slomo-bottom-toggle {
   border-color: var(--primary);
 }
 
+.clip-actions-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.clip-success-msg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(46, 204, 113, 0.15);
+  border: 1px solid rgba(46, 204, 113, 0.3);
+  padding: 4px 10px;
+  border-radius: 20px;
+  color: #2ecc71;
+  font-size: 0.75rem;
+  font-weight: 700;
+  backdrop-filter: blur(4px);
+  animation: fadeIn 0.3s ease-out;
+}
+
+.clip-dl-link {
+  color: #fff;
+  background: var(--primary);
+  padding: 2px 8px;
+  border-radius: 12px;
+  text-decoration: none;
+  font-size: 0.7rem;
+  transition: all 0.2s;
+}
+
+.clip-dl-link:hover {
+  background: var(--accent);
+  transform: translateY(-1px);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
 /* End of CSS */

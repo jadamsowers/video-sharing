@@ -521,6 +521,7 @@ const VideoOverlay: FC<{
   const [tags, setTags] = useState<Tag[]>(video.tags || []);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeJersey, setActiveJersey] = useState("");
+  const [savedClip, setSavedClip] = useState<{ url: string; filename: string } | null>(null);
 
   const saveTagsToServer = async (updatedTags: Tag[]) => {
     try {
@@ -596,6 +597,9 @@ const VideoOverlay: FC<{
 
       // Clip saved on server — refresh the clips list
       await onClipSaved();
+      
+      const data = await response.json();
+      setSavedClip(data.clip);
 
       setIsClipping(false);
       setClipStart(null);
@@ -712,18 +716,28 @@ const VideoOverlay: FC<{
               <div className="vidstack-top-toolbar">
                 <div className="clip-tool-container">
                   {!isClipping ? (
-                    <button
-                      className="action-btn clip-btn"
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        setIsClipping(true);
-                        const dur = videoRef.current?.state.duration || videoDuration || 1;
-                        if (clipStart === null) setClipStart(0);
-                        if (clipEnd === null) setClipEnd(dur);
-                      }}
-                    >
-                      <Scissors size={18} /> Clip
-                    </button>
+                    <div className="clip-actions-row">
+                      <button
+                        className="action-btn clip-btn"
+                        onClick={(e) => { 
+                          e.stopPropagation(); 
+                          setIsClipping(true);
+                          setSavedClip(null);
+                          const dur = videoRef.current?.state.duration || videoDuration || 1;
+                          if (clipStart === null) setClipStart(0);
+                          if (clipEnd === null) setClipEnd(dur);
+                        }}
+                      >
+                        <Scissors size={18} /> Clip
+                      </button>
+                      {savedClip && (
+                        <div className="clip-success-msg">
+                          <Check size={14} />
+                          <span>Saved!</span>
+                          <a href={savedClip.url} download={savedClip.filename} className="clip-dl-link">Download</a>
+                        </div>
+                      )}
+                    </div>
                   ) : (
                     <div className="clip-controls" onClick={(e) => e.stopPropagation()}>
                       <div className="clip-inputs">
