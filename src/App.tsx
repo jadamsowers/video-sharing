@@ -70,7 +70,6 @@ const App: FC = () => {
   const [announcement, setAnnouncement] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const [mobileNavLevel, setMobileNavLevel] = useState<0 | 1 | 2>(0); // 0: Sports, 1: Folders, 2: Videos
 
   const [savedClips, setSavedClips] = useState<SavedClip[]>([]);
   const [savedClipsOpen, setSavedClipsOpen] = useState(false);
@@ -197,7 +196,6 @@ const App: FC = () => {
           );
           if (linkedFolder) {
             setSelectedFolder(linkedFolder);
-            setMobileNavLevel(2);
             const linkedVideo = linkedFolder.videos.find(
               (v) => v.clip_num === dl.clipNum,
             );
@@ -224,6 +222,8 @@ const App: FC = () => {
     fetchSportData();
     setIsTagSearchOpen(false);
     setTagResults([]);
+    setSelectedVideo(null);
+    targetSeekTime.current = null;
   }, [selectedSport]);
 
   const searchSeasonTags = async () => {
@@ -298,7 +298,6 @@ const App: FC = () => {
                     onClick={() => {
                       setSelectedSport(sport);
                       setIsSidebarOpen(false);
-                      setMobileNavLevel(1);
                     }}
                   >
                     {sport.name}
@@ -318,8 +317,10 @@ const App: FC = () => {
                   className={`folder-item ${selectedFolder?.name === folder.name ? "active" : ""}`}
                   onClick={() => {
                     setSelectedFolder(folder);
+                    setSelectedVideo(null);
+                    targetSeekTime.current = null;
+                    setIsTagSearchOpen(false);
                     setIsSidebarOpen(false);
-                    setMobileNavLevel(2);
                   }}
                 >
                   <span>{folder.name}</span>
@@ -337,8 +338,9 @@ const App: FC = () => {
               onClick={() => {
                 setIsTagSearchOpen(true);
                 setSelectedFolder(null);
+                setSelectedVideo(null);
+                targetSeekTime.current = null;
                 setIsSidebarOpen(false);
-                setMobileNavLevel(2);
               }}
             >
               <span>Explore by Tag/Jersey</span>
@@ -408,46 +410,10 @@ const App: FC = () => {
             </div>
           )}
 
-          {/* Mobile Drill-down Menu */}
-          <div className="mobile-drilldown">
-            {mobileNavLevel === 0 && (
-              <div className="menu-grid">
-                {sports.filter(s => s.has_content).map(sport => (
-                  <div 
-                    key={sport.id} 
-                    className={`menu-card ${selectedSport?.id === sport.id ? "active" : ""}`}
-                    onClick={() => {
-                      setSelectedSport(sport);
-                      setMobileNavLevel(1);
-                    }}
-                  >
-                    <Trophy size={32} className="icon-blue" />
-                    <h3>{sport.name}</h3>
-                  </div>
-                ))}
-              </div>
-            )}
+          {/* Mobile drill-down removed as requested */}
 
-            {mobileNavLevel === 1 && (
-              <div className="menu-list">
-                {folders.map(folder => (
-                  <div 
-                    key={folder.name} 
-                    className={`menu-item ${selectedFolder?.name === folder.name ? "active" : ""}`}
-                    onClick={() => {
-                      setSelectedFolder(folder);
-                      setMobileNavLevel(2);
-                    }}
-                  >
-                    <Folder size={20} />
-                    <span>{folder.name}</span>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
-          <div className={`video-grid ${mobileNavLevel < 2 ? "mobile-hidden" : ""}`}>
+          <div className="video-grid">
             {isTagSearchOpen ? (
               <div className="tag-search-view">
                 <div className="tag-search-controls">
