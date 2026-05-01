@@ -552,10 +552,65 @@ main.content {
 }
 
 .jersey-input-wrapper span {
-  font-size: 0.75rem;
-  font-weight: 700;
+  font-size: 0.7rem;
   color: var(--muted);
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.category-select-wrapper {
+  background: var(--glass);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 4px 8px;
+  display: flex;
+  align-items: center;
+}
+
+.category-select {
+  background: transparent;
+  border: none;
+  color: var(--foreground);
+  font-size: 0.8rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+  width: 100%;
+}
+
+.category-select option {
+  background: var(--secondary);
+  color: var(--foreground);
+}
+
+.tag-meta-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tag-category-badge {
+  font-size: 0.6rem;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  text-transform: uppercase;
+}
+
+.tag-category-badge.offense {
+  background: rgba(52, 152, 219, 0.2);
+  color: #3498db;
+}
+
+.tag-category-badge.defense {
+  background: rgba(231, 76, 60, 0.2);
+  color: #e74c3c;
+}
+
+.tag-category-badge.team {
+  background: rgba(155, 89, 182, 0.2);
+  color: #9b59b6;
 }
 
 .jersey-input {
@@ -1359,7 +1414,7 @@ main.content {
 
   .slomo-bottom-toggle {
     bottom: 12px;
-    right: 48px;
+    right: 120px;
     padding: 4px 8px;
     font-size: 0.65rem;
   }
@@ -1382,7 +1437,7 @@ vds-menu-button[aria-label="Settings"],
 .slomo-bottom-toggle {
   position: absolute;
   bottom: 20px; /* Align with bottom controls */
-  right: 60px; /* Position where gear/fullscreen are */
+  right: 140px; /* Position left of airplay/cast/fullscreen icons */
   z-index: 1000; /* Ensure it's above DefaultVideoLayout */
   background: rgba(30, 30, 30, 0.9);
   backdrop-filter: blur(8px);
@@ -1412,6 +1467,179 @@ media-player:not([data-controls]) .slomo-bottom-toggle {
 .slomo-bottom-toggle.active {
   background: var(--primary);
   border-color: var(--primary);
+}
+
+.clip-view-link:hover {
+  text-decoration: underline;
+}
+
+/* Season Tag Search View */
+.tag-search-view {
+  grid-column: 1 / -1;
+  background: var(--card-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 20px;
+  padding: 32px;
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.tag-search-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 24px;
+  align-items: flex-end;
+  background: var(--glass);
+  padding: 24px;
+  border-radius: 16px;
+  border: 1px solid var(--glass-border);
+}
+
+.tag-search-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1;
+  min-width: 150px;
+}
+
+.tag-search-field label {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  color: var(--muted);
+  letter-spacing: 0.5px;
+}
+
+.tag-search-field input,
+.tag-search-field select {
+  background: var(--secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: 8px;
+  padding: 10px 14px;
+  color: var(--foreground);
+  font-family: inherit;
+  font-weight: 600;
+}
+
+.tag-search-btn {
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 12px 24px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+  height: 42px;
+}
+
+.tag-search-btn:hover {
+  background: var(--accent);
+  transform: translateY(-2px);
+}
+
+.tag-results-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 20px;
+}
+
+.tag-result-card {
+  background: var(--secondary);
+  border: 1px solid var(--glass-border);
+  border-radius: 12px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tag-result-card:hover {
+  border-color: var(--primary);
+  transform: translateY(-3px);
+  background: var(--glass);
+}
+
+.tag-result-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+
+.tag-result-label {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.tag-result-folder {
+  font-size: 0.7rem;
+  color: var(--muted);
+  background: var(--glass);
+  padding: 2px 8px;
+  border-radius: 10px;
+}
+
+.tag-result-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-result-jersey {
+  background: var(--primary);
+  color: #fff;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.tag-result-cat {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.tag-result-cat.offense { background: rgba(52, 152, 219, 0.2); color: #3498db; }
+.tag-result-cat.defense { background: rgba(231, 76, 60, 0.2); color: #e74c3c; }
+.tag-result-cat.team { background: rgba(155, 89, 182, 0.2); color: #9b59b6; }
+
+.tag-result-type {
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-transform: capitalize;
+}
+
+.tag-result-date {
+  color: var(--muted);
+  font-size: 0.75rem;
+  margin-left: auto;
+}
+
+.no-results {
+  grid-column: 1 / -1;
+  text-align: center;
+  padding: 40px;
+  color: var(--muted);
+  font-style: italic;
+}
+
+@media (max-width: 768px) {
+  .tag-search-view {
+    padding: 16px;
+  }
+  .tag-search-controls {
+    flex-direction: column;
+    align-items: stretch;
+    padding: 16px;
+  }
+  .tag-results-list {
+    grid-template-columns: 1fr;
+  }
 }
 
 .clip-actions-row {

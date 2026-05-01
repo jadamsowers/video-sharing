@@ -75,9 +75,13 @@ const App: FC = () => {
 
   const [savedClips, setSavedClips] = useState<SavedClip[]>([]);
   const [savedClipsOpen, setSavedClipsOpen] = useState(false);
+  const [isTagSearchOpen, setIsTagSearchOpen] = useState(false);
+  const [tagFilters, setTagFilters] = useState({ jerseyNum: "", type: "", category: "" });
+  const [tagResults, setTagResults] = useState<any[]>([]);
 
   // Deep-link: parsed from the current URL on first load
   const deepLink = useRef(parseDeepLink(window.location.pathname));
+  const targetSeekTime = useRef<number | null>(null);
 
   const fetchSavedClips = useCallback(async () => {
     try {
@@ -219,7 +223,28 @@ const App: FC = () => {
       }
     };
     fetchSportData();
+    setIsTagSearchOpen(false);
+    setTagResults([]);
   }, [selectedSport]);
+
+  const searchSeasonTags = async () => {
+    if (!selectedSport) return;
+    try {
+      const query = new URLSearchParams({
+        sportPath: selectedSport.path,
+        ...(tagFilters.jerseyNum && { jerseyNum: tagFilters.jerseyNum }),
+        ...(tagFilters.type && { type: tagFilters.type }),
+        ...(tagFilters.category && { category: tagFilters.category }),
+      }).toString();
+      
+      const res = await fetch(`/api/tags/search?${query}`);
+      if (!res.ok) throw new Error("Search failed");
+      const results = await res.json();
+      setTagResults(results);
+    } catch (err) {
+      console.error("Tag search failed:", err);
+    }
+  };
 
 
   if (loading) return <div className="loading">Loading videos...</div>;
@@ -302,6 +327,23 @@ const App: FC = () => {
                 </div>
               ))}
             </nav>
+          </div>
+
+          <div className="sidebar-section">
+            <h3 className="section-title">
+              <Zap size={16} /> Season Highlights
+            </h3>
+            <div 
+              className={`folder-item ${isTagSearchOpen ? "active" : ""}`}
+              onClick={() => {
+                setIsTagSearchOpen(true);
+                setSelectedFolder(null);
+                setIsSidebarOpen(false);
+                setMobileNavLevel(2);
+              }}
+            >
+              <span>Explore by Tag/Jersey</span>
+            </div>
           </div>
         </aside>
 
@@ -426,7 +468,79 @@ const App: FC = () => {
           </div>
 
           <div className={`video-grid ${mobileNavLevel < 2 ? "mobile-hidden" : ""}`}>
-            {selectedFolder?.videos
+            {isTagSearchOpen ? (
+              <div className="tag-search-view">
+                <div className="tag-search-controls">
+                  <div className="tag-search-field">
+                    <label>Jersey #</label>
+                    <input 
+                      type="text" 
+                      placeholder="--" 
+                      value={tagFilters.jerseyNum} 
+                      onChange={e => setTagFilters(f => ({...f, jerseyNum: e.target.value}))}
+                    />
+                  </div>
+                  <div className="tag-search-field">
+                    <label>Type</label>
+                    <select value={tagFilters.type} onChange={e => setTagFilters(f => ({...f, type: e.target.value}))}>
+                      <option value="">Any Type</option>
+                      <option value="goal">Goal</option>
+                      <option value="play">Play</option>
+                      <option value="save">Save</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                  <div className="tag-search-field">
+                    <label>Category</label>
+                    <select value={tagFilters.category} onChange={e => setTagFilters(f => ({...f, category: e.target.value}))}>
+                      <option value="">Any Category</option>
+                      <option value="offense">Offense</option>
+                      <option value="defense">Defense</option>
+                      <option value="team">Team</option>
+                    </select>
+                  </div>
+                  <button className="tag-search-btn" onClick={searchSeasonTags}>
+                    Search
+                  </button>
+                </div>
+
+                <div className="tag-results-list">
+                  {tagResults.length === 0 ? (
+                    <div className="no-results">Use the filters above to find highlights across the season.</div>
+                  ) : (
+                    tagResults.map(tag => {
+                      // Find the folder and video for this tag
+                      const folder = folders.find(f => f.folder_path === tag.folder_name || f.name === tag.folder_name);
+                      const video = folder?.videos.find(v => v.clip_num === tag.clip_num);
+                      
+                      return (
+                        <div key={tag.id} className="tag-result-card" onClick={() => {
+                          if (folder && video) {
+                            setSelectedFolder(folder);
+                            setSelectedVideo(video);
+                            // Set target seek time (normalized to 1x speed)
+                            targetSeekTime.current = tag.time;
+                          }
+                        }}>
+                          <div className="tag-result-info">
+                            <div className="tag-result-header">
+                              <span className="tag-result-label">{tag.label}</span>
+                              <span className="tag-result-folder">{tag.folder_name}</span>
+                            </div>
+                            <div className="tag-result-meta">
+                              {tag.jersey_num && <span className="tag-result-jersey">#{tag.jersey_num}</span>}
+                              {tag.category && <span className={`tag-result-cat ${tag.category}`}>{tag.category}</span>}
+                              <span className="tag-result-type">{tag.type}</span>
+                              <span className="tag-result-date">{tag.clip_date}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            ) : selectedFolder?.videos
               .filter((v) => Object.keys(v.versions).length > 0)
               .map((vid) => (
                 <div
@@ -438,6 +552,8 @@ const App: FC = () => {
                     const fp = selectedFolder?.folder_path || selectedFolder?.name || "";
                     history.pushState(null, "",
                       buildClipUrl(selectedSport?.path || "", fp, vid.clip_num));
+                    // Reset seek time when picking a new video normally
+                    targetSeekTime.current = null;
                   }}
                 >
                   <div className="thumbnail-container">
@@ -475,8 +591,10 @@ const App: FC = () => {
               onClose={() => {
                 setSelectedVideo(null);
                 history.pushState(null, "", "/");
+                targetSeekTime.current = null;
               }}
               onClipSaved={fetchSavedClips}
+              globalTargetSeekTime={targetSeekTime}
             />
           )}
         </main>
@@ -490,8 +608,9 @@ const VideoOverlay: FC<{
   folderPath: string;
   sportPath: string;
   onClose: () => void;
-  onClipSaved: () => void;
-}> = ({ video, folderPath, sportPath, onClose, onClipSaved }) => {
+  onClipSaved: () => Promise<void>;
+  globalTargetSeekTime: React.RefObject<number | null>;
+}> = ({ video, folderPath, sportPath, onClose, onClipSaved, globalTargetSeekTime }) => {
   const [shareCopied, setShareCopied] = useState(false);
 
   const handleShare = useCallback(async () => {
@@ -521,6 +640,7 @@ const VideoOverlay: FC<{
   const [tags, setTags] = useState<Tag[]>(video.tags || []);
   const [searchTerm, setSearchTerm] = useState("");
   const [activeJersey, setActiveJersey] = useState("");
+  const [activeCategory, setActiveCategory] = useState<Tag["category"] | "">("");
   const [savedClip, setSavedClip] = useState<{ url: string; filename: string } | null>(null);
 
   const saveTagsToServer = async (updatedTags: Tag[]) => {
@@ -614,6 +734,12 @@ const VideoOverlay: FC<{
 
   const addTag = (type: Tag["type"], label: string) => {
     if (!videoRef.current) return;
+
+    if (!activeJersey && !activeCategory) {
+      alert("Please provide either a Jersey # or a Category (Offense/Defense/Team).");
+      return;
+    }
+
     const currentTime = videoRef.current.currentTime;
     const stretch = video.versions[currentMode].stretch_factor;
     const referenceTime = currentTime / stretch;
@@ -623,6 +749,7 @@ const VideoOverlay: FC<{
       label,
       time: referenceTime,
       type,
+      category: activeCategory || undefined,
       jerseyNumber: activeJersey || undefined,
     };
 
@@ -671,9 +798,9 @@ const VideoOverlay: FC<{
     const v = videoRef.current;
     if (v) {
       setVideoDuration(v.state.duration || 0);
-      if (targetSeekTime.current !== null) {
-        v.currentTime = targetSeekTime.current;
-        targetSeekTime.current = null;
+      if (globalTargetSeekTime.current !== null) {
+        v.currentTime = globalTargetSeekTime.current;
+        // globalTargetSeekTime.current = null; // Don't clear here, onClose handles it
         if (playing) v.play();
       }
     }
@@ -909,6 +1036,18 @@ const VideoOverlay: FC<{
                   className="jersey-input"
                 />
               </div>
+              <div className="category-select-wrapper">
+                <select 
+                  value={activeCategory} 
+                  onChange={(e) => setActiveCategory(e.target.value as any)}
+                  className="category-select"
+                >
+                  <option value="">Category...</option>
+                  <option value="offense">Offense</option>
+                  <option value="defense">Defense</option>
+                  <option value="team">Team</option>
+                </select>
+              </div>
               <div className="search-input-wrapper">
                 <Search size={16} />
                 <input
@@ -944,9 +1083,14 @@ const VideoOverlay: FC<{
                       <div className="tag-info">
                         <div className="tag-label-row">
                           <span className="tag-label">{tag.label}</span>
-                          {tag.jerseyNumber && (
-                            <span className="tag-jersey">#{tag.jerseyNumber}</span>
-                          )}
+                          <div className="tag-meta-badges">
+                            {tag.jerseyNumber && (
+                              <span className="tag-jersey">#{tag.jerseyNumber}</span>
+                            )}
+                            {tag.category && (
+                              <span className={`tag-category-badge ${tag.category}`}>{tag.category}</span>
+                            )}
+                          </div>
                         </div>
                         <span className="tag-time">
                           {formatDuration(

@@ -45,6 +45,7 @@ db.exec(`
     clip_date   TEXT,
     label       TEXT NOT NULL,
     type        TEXT NOT NULL,
+    category    TEXT,
     time        REAL NOT NULL,
     jersey_num  TEXT,
     created_at  TEXT NOT NULL DEFAULT (datetime('now'))
@@ -65,8 +66,8 @@ const deleteClip = db.prepare(`
 `);
 
 const upsertTags = db.prepare(`
-  INSERT OR REPLACE INTO tags (id, sport_path, folder_name, clip_num, clip_date, label, type, time, jersey_num)
-  VALUES (@id, @sportPath, @folderName, @clipNum, @clipDate, @label, @type, @time, @jerseyNum)
+  INSERT OR REPLACE INTO tags (id, sport_path, folder_name, clip_num, clip_date, label, type, category, time, jersey_num)
+  VALUES (@id, @sportPath, @folderName, @clipNum, @clipDate, @label, @type, @category, @time, @jerseyNum)
 `);
 
 const deleteMissingTags = db.prepare(`
@@ -115,6 +116,7 @@ app.post('/api/tags', (req, res) => {
           clipDate: date,
           label: tag.label,
           type: tag.type,
+          category: tag.category || null,
           time: tag.time,
           jerseyNum: tag.jerseyNumber || null,
         });
@@ -128,6 +130,35 @@ app.post('/api/tags', (req, res) => {
     res.json({ success: true });
   } catch (err) {
     console.error('Error in /api/tags:', err);
+    res.status(500).json({ error: err.message || 'Internal server error' });
+  }
+});
+
+// --- Search Tags ---
+app.get('/api/tags/search', (req, res) => {
+  try {
+    const { sportPath, jerseyNum, type, category } = req.query;
+    let query = `SELECT * FROM tags WHERE sport_path = ?`;
+    const params = [sportPath];
+
+    if (jerseyNum) {
+      query += ` AND jersey_num = ?`;
+      params.push(jerseyNum);
+    }
+    if (type) {
+      query += ` AND type = ?`;
+      params.push(type);
+    }
+    if (category) {
+      query += ` AND category = ?`;
+      params.push(category);
+    }
+
+    query += ` ORDER BY clip_date DESC, time ASC`;
+    const results = db.prepare(query).all(...params);
+    res.json(results);
+  } catch (err) {
+    console.error('Error in /api/tags/search:', err);
     res.status(500).json({ error: err.message || 'Internal server error' });
   }
 });

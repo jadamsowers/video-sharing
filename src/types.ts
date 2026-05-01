@@ -11,6 +11,7 @@ export interface Tag {
   label: string;
   time: number; // Reference time in seconds (at 1x speed)
   type: "goal" | "play" | "save" | "other";
+  category?: "offense" | "defense" | "team";
   jerseyNumber?: string;
 }
 
