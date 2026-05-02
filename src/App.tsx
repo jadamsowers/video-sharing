@@ -899,7 +899,6 @@ const VideoOverlay: FC<{
               
             </MediaPlayer>
           </div>
-        </div>
 
           <div className="player-footer">
             <div className="footer-actions">
@@ -987,6 +986,7 @@ const VideoOverlay: FC<{
           </div>
         </div>
       </div>
+    </div>
   );
 };
 
