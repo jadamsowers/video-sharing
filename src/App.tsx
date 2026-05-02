@@ -771,14 +771,6 @@ const VideoOverlay: FC<{
   return (
     <div className="player-overlay">
       <div className="player-header">
-        {video.versions["120fps"] && (
-          <button 
-            className={`slomo-header-toggle ${currentMode === "120fps" ? "active" : ""}`}
-            onClick={() => switchToMode(currentMode === "60fps" ? "120fps" : "60fps")}
-          >
-            {currentMode === "120fps" ? "Slo-mo: ON" : "Slo-mo: OFF"}
-          </button>
-        )}
         <button className="player-close" onClick={onClose} title="Back to Game">
           <X size={24} />
         </button>
@@ -786,6 +778,15 @@ const VideoOverlay: FC<{
       <div className="player-main">
         <div className="player-content">
           <div className="video-wrapper">
+            {video.versions["120fps"] && (
+              <button 
+                className={`slomo-overlay-toggle ${currentMode === "120fps" ? "active" : ""}`}
+                onClick={() => switchToMode(currentMode === "60fps" ? "120fps" : "60fps")}
+                title="Toggle Speed"
+              >
+                {currentMode === "120fps" ? "Slo-mo" : "1x"}
+              </button>
+            )}
             <MediaPlayer
               ref={videoRef}
               title={`Clip #${video.clip_num} vs ${video.opponent}`}
@@ -896,92 +897,96 @@ const VideoOverlay: FC<{
                 />
               )}
               
-              {video.versions["120fps"] && (
-                <button 
-                  className={`slomo-bottom-toggle ${currentMode === "120fps" ? "active" : ""}`}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    switchToMode(currentMode === "120fps" ? "60fps" : "120fps");
-                  }}
-                  title="Toggle Slo-mo"
-                >
-                  {currentMode === "120fps" ? "Slo-mo" : "Regular"}
-                </button>
-              )}
             </MediaPlayer>
           </div>
         </div>
 
-        <div className="player-sidebar">
-          <div className="sidebar-compact-controls">
-            <button
-              className={`compact-action-btn share ${shareCopied ? "copied" : ""}`}
-              onClick={handleShare}
-            >
-              {shareCopied ? <Check size={18} /> : <Share2 size={18} />}
-              <span>Share</span>
-            </button>
-            <div className="compact-download">
-              <button onClick={() => setShowDownload(!showDownload)}>
-                <Download size={18} />
-              </button>
-              {showDownload && (
-                <div className="compact-dropdown">
-                  {availableVersions.map(v => (
-                    <div key={v} onClick={() => {
-                      window.open(`${MEDIA_ROOT}/${sportPath}/${folderPath}/${video.versions[v].filename}`, "_blank");
-                      setShowDownload(false);
-                    }}>
-                      {v}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="tag-capture-pro">
-            <div className="tag-inputs-row">
-              <input 
-                type="text" 
-                placeholder="#" 
-                value={activeJersey} 
-                onChange={e => setActiveJersey(e.target.value)}
-                className="jersey-mini"
-              />
-              <select 
-                value={activeCategory} 
-                onChange={e => setActiveCategory(e.target.value as any)}
-                className="category-mini"
+          <div className="player-footer">
+            <div className="footer-actions">
+              <button
+                className={`compact-action-btn share ${shareCopied ? "copied" : ""}`}
+                onClick={handleShare}
               >
-                <option value="">Pos...</option>
-                <option value="offense">OFF</option>
-                <option value="defense">DEF</option>
-                <option value="team">TEAM</option>
-              </select>
+                {shareCopied ? <Check size={18} /> : <Share2 size={18} />}
+                <span>Share Clip</span>
+              </button>
+              
+              <div className="compact-download">
+                <button onClick={() => setShowDownload(!showDownload)} className="download-trigger">
+                  <Download size={18} /> <span>Download Video</span>
+                </button>
+                {showDownload && (
+                  <div className="compact-dropdown">
+                    {availableVersions.map(v => (
+                      <div key={v} onClick={() => {
+                        window.open(`${MEDIA_ROOT}/${sportPath}/${folderPath}/${video.versions[v].filename}`, "_blank");
+                        setShowDownload(false);
+                      }}>
+                        {v} version
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
-            <div className="quick-action-grid">
-              <button onClick={() => addTag("goal", "Goal")} className="qa-btn goal" title="Goal"><Trophy size={16} /></button>
-              <button onClick={() => addTag("save", "Save")} className="qa-btn save" title="Save"><Shield size={16} /></button>
-              <button onClick={() => addTag("play", "Big Play")} className="qa-btn play" title="Big Play"><Zap size={16} /></button>
-              <button onClick={() => addTag("other", "Highlight")} className="qa-btn other" title="Other"><Star size={16} /></button>
-            </div>
-          </div>
 
-          <div className="tag-scroll-area">
-            {tags.sort((a, b) => a.time - b.time).map(tag => (
-              <div key={tag.id} className={`tag-pill ${tag.type}`} onClick={() => seekToTag(tag)}>
-                <span className="tag-pill-time">{formatDuration(tag.time * video.versions[currentMode].stretch_factor)}</span>
-                <span className="tag-pill-label">{tag.label} {tag.jerseyNumber ? `#${tag.jerseyNumber}` : ""}</span>
-                <button className="tag-pill-delete" onClick={(e) => { e.stopPropagation(); removeTag(tag.id); }}>
-                  <X size={12} />
+            <div className="tag-capture-pro">
+              <div className="tag-inputs-row">
+                <div className="mini-input-group">
+                  <span className="mini-label">Jersey</span>
+                  <input 
+                    type="text" 
+                    placeholder="#" 
+                    value={activeJersey} 
+                    onChange={e => setActiveJersey(e.target.value)}
+                    className="jersey-mini"
+                  />
+                </div>
+                <div className="mini-input-group">
+                  <span className="mini-label">Position</span>
+                  <select 
+                    value={activeCategory} 
+                    onChange={e => setActiveCategory(e.target.value as any)}
+                    className="category-mini"
+                  >
+                    <option value="">Select...</option>
+                    <option value="offense">Offense</option>
+                    <option value="defense">Defense</option>
+                    <option value="team">Team</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="quick-action-grid">
+                <button onClick={() => addTag("goal", "Goal")} className="qa-btn goal" title="Goal">
+                  <Trophy size={18} /> <span>Goal</span>
+                </button>
+                <button onClick={() => addTag("save", "Save")} className="qa-btn save" title="Save">
+                  <Shield size={18} /> <span>Save</span>
+                </button>
+                <button onClick={() => addTag("play", "Big Play")} className="qa-btn play" title="Big Play">
+                  <Zap size={18} /> <span>Big Play</span>
+                </button>
+                <button onClick={() => addTag("other", "Highlight")} className="qa-btn other" title="Other">
+                  <Star size={18} /> <span>Highlight</span>
                 </button>
               </div>
-            ))}
+            </div>
+
+            <div className="tag-pills-container">
+              {tags.sort((a, b) => a.time - b.time).map(tag => (
+                <div key={tag.id} className={`tag-pill ${tag.type}`} onClick={() => seekToTag(tag)}>
+                  <span className="tag-pill-time">{formatDuration(tag.time * video.versions[currentMode].stretch_factor)}</span>
+                  <span className="tag-pill-label">{tag.label} {tag.jerseyNumber ? `#${tag.jerseyNumber}` : ""}</span>
+                  <button className="tag-pill-delete" onClick={(e) => { e.stopPropagation(); removeTag(tag.id); }}>
+                    <X size={12} />
+                  </button>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
-    </div>
   );
 };
 
