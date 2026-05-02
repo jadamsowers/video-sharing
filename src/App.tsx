@@ -17,11 +17,16 @@ import {
   Scissors,
   Loader2,
   Check,
+  Tag as TagIcon,
+  Star,
+  Shield,
   Zap,
+  Search,
+  Share2,
   Film,
   Trash2,
 } from "lucide-react";
-import type { VideoMetadata, FolderManifest, Sport, SavedClip } from "./types";
+import type { VideoMetadata, FolderManifest, Sport, Tag, SavedClip } from "./types";
 
 const MEDIA_ROOT = "/media";
 
@@ -574,12 +579,91 @@ const VideoOverlay: FC<{
     video.versions["60fps"] ? "60fps" : "120fps",
   );
   const [playing, setPlaying] = useState(true);
+  const [showDownload, setShowDownload] = useState(false);
   const [isClipping, setIsClipping] = useState(false);
   const [clipStart, setClipStart] = useState<number | null>(null);
   const [clipEnd, setClipEnd] = useState<number | null>(null);
   const [videoDuration, setVideoDuration] = useState<number>(0);
   const [processing, setProcessing] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+  const [tags, setTags] = useState<Tag[]>(video.tags || []);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [activeJersey, setActiveJersey] = useState("");
+  const [activeCategory, setActiveCategory] = useState<Tag["category"] | "">("");
   const [savedClip, setSavedClip] = useState<{ url: string; filename: string } | null>(null);
+
+  const handleShare = useCallback(async () => {
+    const url = buildClipUrl(sportPath, folderPath, video.clip_num);
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `Clip #${video.clip_num} vs ${video.opponent}`, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareCopied(true);
+        setTimeout(() => setShareCopied(false), 2000);
+      }
+    } catch {
+      // User cancelled share sheet – ignore
+    }
+  }, [sportPath, folderPath, video.clip_num, video.opponent]);
+
+  const saveTagsToServer = async (updatedTags: Tag[]) => {
+    try {
+      const response = await fetch('/api/tags', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sportPath,
+          folderName: folderPath,
+          clipNum: video.clip_num,
+          date: video.date,
+          tags: updatedTags
+        })
+      });
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to save tags');
+      }
+      video.tags = updatedTags;
+      setTags(updatedTags);
+    } catch (err) {
+      console.error('Error saving tags:', err);
+      alert(`Failed to save tags to server: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    }
+  };
+
+  const addTag = (type: Tag["type"], label: string) => {
+    if (!videoRef.current) return;
+
+    const currentTime = videoRef.current.currentTime;
+    const stretch = video.versions[currentMode].stretch_factor;
+    const referenceTime = currentTime / stretch;
+
+    const newTag: Tag = {
+      id: Math.random().toString(36).substr(2, 9),
+      label,
+      time: referenceTime,
+      type,
+      category: activeCategory || undefined,
+      jerseyNumber: activeJersey || undefined,
+    };
+
+    saveTagsToServer([...tags, newTag]);
+  };
+
+  const removeTag = (id: string) => {
+    const updated = tags.filter(t => t.id !== id);
+    saveTagsToServer(updated);
+  };
+
+  const seekToTag = (tag: Tag) => {
+    if (!videoRef.current) return;
+    const stretch = video.versions[currentMode].stretch_factor;
+    videoRef.current.currentTime = tag.time * stretch;
+    videoRef.current.play();
+  };
+
+  const availableVersions = Object.keys(video.versions);
 
 
   const videoRef = useRef<MediaPlayerInstance>(null);
@@ -828,6 +912,75 @@ const VideoOverlay: FC<{
                 </button>
               )}
             </MediaPlayer>
+          </div>
+        </div>
+
+        <div className="player-sidebar">
+          <div className="sidebar-compact-controls">
+            <button
+              className={`compact-action-btn share ${shareCopied ? "copied" : ""}`}
+              onClick={handleShare}
+            >
+              {shareCopied ? <Check size={18} /> : <Share2 size={18} />}
+              <span>Share</span>
+            </button>
+            <div className="compact-download">
+              <button onClick={() => setShowDownload(!showDownload)}>
+                <Download size={18} />
+              </button>
+              {showDownload && (
+                <div className="compact-dropdown">
+                  {availableVersions.map(v => (
+                    <div key={v} onClick={() => {
+                      window.open(`${MEDIA_ROOT}/${sportPath}/${folderPath}/${video.versions[v].filename}`, "_blank");
+                      setShowDownload(false);
+                    }}>
+                      {v}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="tag-capture-pro">
+            <div className="tag-inputs-row">
+              <input 
+                type="text" 
+                placeholder="#" 
+                value={activeJersey} 
+                onChange={e => setActiveJersey(e.target.value)}
+                className="jersey-mini"
+              />
+              <select 
+                value={activeCategory} 
+                onChange={e => setActiveCategory(e.target.value as any)}
+                className="category-mini"
+              >
+                <option value="">Pos...</option>
+                <option value="offense">OFF</option>
+                <option value="defense">DEF</option>
+                <option value="team">TEAM</option>
+              </select>
+            </div>
+            <div className="quick-action-grid">
+              <button onClick={() => addTag("goal", "Goal")} className="qa-btn goal" title="Goal"><Trophy size={16} /></button>
+              <button onClick={() => addTag("save", "Save")} className="qa-btn save" title="Save"><Shield size={16} /></button>
+              <button onClick={() => addTag("play", "Big Play")} className="qa-btn play" title="Big Play"><Zap size={16} /></button>
+              <button onClick={() => addTag("other", "Highlight")} className="qa-btn other" title="Other"><Star size={16} /></button>
+            </div>
+          </div>
+
+          <div className="tag-scroll-area">
+            {tags.sort((a, b) => a.time - b.time).map(tag => (
+              <div key={tag.id} className={`tag-pill ${tag.type}`} onClick={() => seekToTag(tag)}>
+                <span className="tag-pill-time">{formatDuration(tag.time * video.versions[currentMode].stretch_factor)}</span>
+                <span className="tag-pill-label">{tag.label} {tag.jerseyNumber ? `#${tag.jerseyNumber}` : ""}</span>
+                <button className="tag-pill-delete" onClick={(e) => { e.stopPropagation(); removeTag(tag.id); }}>
+                  <X size={12} />
+                </button>
+              </div>
+            ))}
           </div>
         </div>
       </div>
