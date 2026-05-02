@@ -17,11 +17,9 @@ import {
   Scissors,
   Loader2,
   Check,
-  Tag as TagIcon,
   Star,
   Shield,
   Zap,
-  Search,
   Share2,
   Film,
   Trash2,
@@ -587,7 +585,6 @@ const VideoOverlay: FC<{
   const [processing, setProcessing] = useState(false);
   const [shareCopied, setShareCopied] = useState(false);
   const [tags, setTags] = useState<Tag[]>(video.tags || []);
-  const [searchTerm, setSearchTerm] = useState("");
   const [activeJersey, setActiveJersey] = useState("");
   const [activeCategory, setActiveCategory] = useState<Tag["category"] | "">("");
   const [savedClip, setSavedClip] = useState<{ url: string; filename: string } | null>(null);
