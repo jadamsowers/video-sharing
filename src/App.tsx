@@ -755,9 +755,13 @@ const VideoOverlay: FC<{
     const v = videoRef.current;
     if (v) {
       setVideoDuration(v.state.duration || 0);
-      if (globalTargetSeekTime.current !== null) {
-        v.currentTime = globalTargetSeekTime.current;
-        // globalTargetSeekTime.current = null; // Don't clear here, onClose handles it
+      
+      // Use targetSeekTime if it exists (mode switch), otherwise use globalTargetSeekTime (initial load)
+      const seekTime = targetSeekTime.current !== null ? targetSeekTime.current : globalTargetSeekTime.current;
+      
+      if (seekTime !== null) {
+        v.currentTime = seekTime;
+        targetSeekTime.current = null;
         if (playing) v.play();
       }
     }
@@ -766,9 +770,19 @@ const VideoOverlay: FC<{
   return (
     <div className="player-overlay">
       <div className="player-header">
-        <div className="player-title">
-          <h2>Clip #{video.clip_num} vs {video.opponent}</h2>
-          <p>{video.date}</p>
+        <div className="player-header-left">
+          {video.versions["120fps"] && (
+            <button 
+              className={`slomo-header-toggle ${currentMode === "120fps" ? "active" : ""}`}
+              onClick={() => switchToMode(currentMode === "60fps" ? "120fps" : "60fps")}
+            >
+              {currentMode === "120fps" ? "Slo-mo: ON" : "Slo-mo: OFF"}
+            </button>
+          )}
+          <div className="player-title">
+            <h2>Clip #{video.clip_num} vs {video.opponent}</h2>
+            <p>{video.date}</p>
+          </div>
         </div>
         <button className="player-close" onClick={onClose}>
           <X size={20} />
