@@ -17,16 +17,11 @@ import {
   Scissors,
   Loader2,
   Check,
-  Tag as TagIcon,
-  Star,
-  Shield,
   Zap,
-  Search,
-  Share2,
   Film,
   Trash2,
 } from "lucide-react";
-import type { VideoMetadata, FolderManifest, Sport, Tag, SavedClip } from "./types";
+import type { VideoMetadata, FolderManifest, Sport, SavedClip } from "./types";
 
 const MEDIA_ROOT = "/media";
 
@@ -80,6 +75,13 @@ const App: FC = () => {
   // Deep-link: parsed from the current URL on first load
   const deepLink = useRef(parseDeepLink(window.location.pathname));
   const targetSeekTime = useRef<number | null>(null);
+  const contentRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    if (selectedVideo && contentRef.current) {
+      contentRef.current.scrollTo(0, 0);
+    }
+  }, [selectedVideo]);
 
   const fetchSavedClips = useCallback(async () => {
     try {
@@ -348,7 +350,7 @@ const App: FC = () => {
           </div>
         </aside>
 
-        <main className="content">
+        <main className="content" ref={contentRef}>
 
 
           {/* Saved Clips Panel */}
@@ -568,62 +570,17 @@ const VideoOverlay: FC<{
   onClipSaved: () => Promise<void>;
   globalTargetSeekTime: React.RefObject<number | null>;
 }> = ({ video, folderPath, sportPath, onClose, onClipSaved, globalTargetSeekTime }) => {
-  const [shareCopied, setShareCopied] = useState(false);
-
-  const handleShare = useCallback(async () => {
-    const url = buildClipUrl(sportPath, folderPath, video.clip_num);
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: `Clip #${video.clip_num} vs ${video.opponent}`, url });
-      } else {
-        await navigator.clipboard.writeText(url);
-        setShareCopied(true);
-        setTimeout(() => setShareCopied(false), 2000);
-      }
-    } catch {
-      // User cancelled share sheet – ignore
-    }
-  }, [sportPath, folderPath, video.clip_num, video.opponent]);
   const [currentMode, setCurrentMode] = useState<"60fps" | "120fps">(
     video.versions["60fps"] ? "60fps" : "120fps",
   );
   const [playing, setPlaying] = useState(true);
-  const [showDownload, setShowDownload] = useState(false);
   const [isClipping, setIsClipping] = useState(false);
   const [clipStart, setClipStart] = useState<number | null>(null);
   const [clipEnd, setClipEnd] = useState<number | null>(null);
   const [videoDuration, setVideoDuration] = useState<number>(0);
   const [processing, setProcessing] = useState(false);
-  const [tags, setTags] = useState<Tag[]>(video.tags || []);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [activeJersey, setActiveJersey] = useState("");
-  const [activeCategory, setActiveCategory] = useState<Tag["category"] | "">("");
   const [savedClip, setSavedClip] = useState<{ url: string; filename: string } | null>(null);
 
-  const saveTagsToServer = async (updatedTags: Tag[]) => {
-    try {
-      const response = await fetch('/api/tags', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          sportPath,
-          folderName: folderPath,
-          clipNum: video.clip_num,
-          date: video.date,
-          tags: updatedTags
-        })
-      });
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to save tags');
-      }
-      video.tags = updatedTags;
-      setTags(updatedTags);
-    } catch (err) {
-      console.error('Error saving tags:', err);
-      alert(`Failed to save tags to server: ${err instanceof Error ? err.message : 'Unknown error'}`);
-    }
-  };
 
   const videoRef = useRef<MediaPlayerInstance>(null);
   const targetSeekTime = useRef<number | null>(null);
@@ -689,43 +646,6 @@ const VideoOverlay: FC<{
     }
   };
 
-  const addTag = (type: Tag["type"], label: string) => {
-    if (!videoRef.current) return;
-
-    if (!activeJersey && !activeCategory) {
-      alert("Please provide either a Jersey # or a Category (Offense/Defense/Team).");
-      return;
-    }
-
-    const currentTime = videoRef.current.currentTime;
-    const stretch = video.versions[currentMode].stretch_factor;
-    const referenceTime = currentTime / stretch;
-
-    const newTag: Tag = {
-      id: Math.random().toString(36).substr(2, 9),
-      label,
-      time: referenceTime,
-      type,
-      category: activeCategory || undefined,
-      jerseyNumber: activeJersey || undefined,
-    };
-
-    saveTagsToServer([...tags, newTag]);
-  };
-
-  const removeTag = (id: string) => {
-    const updated = tags.filter(t => t.id !== id);
-    saveTagsToServer(updated);
-  };
-
-  const seekToTag = (tag: Tag) => {
-    if (!videoRef.current) return;
-    const stretch = video.versions[currentMode].stretch_factor;
-    videoRef.current.currentTime = tag.time * stretch;
-    videoRef.current.play();
-  };
-
-  const availableVersions = Object.keys(video.versions);
 
   const switchToMode = (mode: "60fps" | "120fps") => {
     if (
@@ -770,23 +690,16 @@ const VideoOverlay: FC<{
   return (
     <div className="player-overlay">
       <div className="player-header">
-        <div className="player-header-left">
-          {video.versions["120fps"] && (
-            <button 
-              className={`slomo-header-toggle ${currentMode === "120fps" ? "active" : ""}`}
-              onClick={() => switchToMode(currentMode === "60fps" ? "120fps" : "60fps")}
-            >
-              {currentMode === "120fps" ? "Slo-mo: ON" : "Slo-mo: OFF"}
-            </button>
-          )}
-          <div className="player-title">
-            <h2>Clip #{video.clip_num} vs {video.opponent}</h2>
-            <p>{video.date}</p>
-          </div>
-        </div>
-        <button className="player-close" onClick={onClose}>
-          <X size={20} />
-          <span>Back to Game</span>
+        {video.versions["120fps"] && (
+          <button 
+            className={`slomo-header-toggle ${currentMode === "120fps" ? "active" : ""}`}
+            onClick={() => switchToMode(currentMode === "60fps" ? "120fps" : "60fps")}
+          >
+            {currentMode === "120fps" ? "Slo-mo: ON" : "Slo-mo: OFF"}
+          </button>
+        )}
+        <button className="player-close" onClick={onClose} title="Back to Game">
+          <X size={24} />
         </button>
       </div>
       <div className="player-main">
@@ -915,194 +828,6 @@ const VideoOverlay: FC<{
                 </button>
               )}
             </MediaPlayer>
-          </div>
-
-          <div className="player-controls">
-            <div className="action-buttons">
-              <button
-                className={`action-btn share-btn ${shareCopied ? "copied" : ""}`}
-                onClick={handleShare}
-                title="Share clip link"
-              >
-                {shareCopied ? <><Check size={20} /> Copied!</> : <><Share2 size={20} /> Share</>}
-              </button>
-
-              <div className="download-dropdown">
-                <button
-                  className="download-btn"
-                  onClick={() => setShowDownload(!showDownload)}
-                >
-                  <Download size={20} /> Full Video <ChevronDown size={16} />
-                </button>
-                {showDownload && (
-                  <div className="dropdown-menu">
-                    {availableVersions.map((v) => (
-                      <div
-                        key={v}
-                        className="dropdown-item"
-                        onClick={() => {
-                          window.open(
-                            `${MEDIA_ROOT}/${sportPath}/${folderPath}/${video.versions[v].filename}`,
-                            "_blank",
-                          );
-                          setShowDownload(false);
-                        }}
-                      >
-                        Download {v} version
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="player-sidebar">
-          <div className="tag-section">
-            <div className="tag-header">
-              <h3>
-                <TagIcon size={18} /> Highlights
-              </h3>
-              <div className="quick-tags">
-                <button
-                  className="quick-tag-btn goal"
-                  onClick={() => addTag("goal", "Goal!")}
-                  title="Record Goal"
-                >
-                  <Trophy size={16} />
-                </button>
-                <button
-                  className="quick-tag-btn play"
-                  onClick={() => addTag("play", "Big Play")}
-                  title="Big Play"
-                >
-                  <Zap size={16} />
-                </button>
-                <button
-                  className="quick-tag-btn save"
-                  onClick={() => addTag("save", "Save")}
-                  title="Great Save"
-                >
-                  <Shield size={16} />
-                </button>
-                <button
-                  className="quick-tag-btn other"
-                  onClick={() => addTag("other", "Highlight")}
-                  title="Other"
-                >
-                  <Star size={16} />
-                </button>
-              </div>
-            </div>
-
-            <div className="tag-controls">
-              <div className="jersey-input-wrapper">
-                <span>Jersey #</span>
-                <input
-                  type="text"
-                  placeholder="--"
-                  value={activeJersey}
-                  onChange={(e) => setActiveJersey(e.target.value)}
-                  className="jersey-input"
-                />
-              </div>
-              <div className="category-select-wrapper">
-                <select 
-                  value={activeCategory} 
-                  onChange={(e) => setActiveCategory(e.target.value as any)}
-                  className="category-select"
-                >
-                  <option value="">Category...</option>
-                  <option value="offense">Offense</option>
-                  <option value="defense">Defense</option>
-                  <option value="team">Team</option>
-                </select>
-              </div>
-              <div className="search-input-wrapper">
-                <Search size={16} />
-                <input
-                  type="text"
-                  placeholder="Search highlights..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="tag-search"
-                />
-              </div>
-            </div>
-
-            <div className="tag-list">
-              {tags.length === 0 ? (
-                <p className="no-tags">No tags yet. Add one during playback!</p>
-              ) : (
-                tags
-                  .filter(tag => {
-                    if (!searchTerm) return true;
-                    const search = searchTerm.toLowerCase();
-                    return (
-                      tag.label.toLowerCase().includes(search) ||
-                      (tag.jerseyNumber && tag.jerseyNumber.includes(search))
-                    );
-                  })
-                  .sort((a, b) => a.time - b.time)
-                  .map((tag) => (
-                    <div
-                      key={tag.id}
-                      className={`tag-item ${tag.type}`}
-                      onClick={() => seekToTag(tag)}
-                    >
-                      <div className="tag-info">
-                        <div className="tag-label-row">
-                          <span className="tag-label">{tag.label}</span>
-                          <div className="tag-meta-badges">
-                            {tag.jerseyNumber && (
-                              <span className="tag-jersey">#{tag.jerseyNumber}</span>
-                            )}
-                            {tag.category && (
-                              <span className={`tag-category-badge ${tag.category}`}>{tag.category}</span>
-                            )}
-                          </div>
-                        </div>
-                        <span className="tag-time">
-                          {formatDuration(
-                            tag.time *
-                              video.versions[currentMode].stretch_factor,
-                          )}
-                        </span>
-                      </div>
-                      <div className="tag-actions">
-                        <div className="tag-icon-mini">
-                          {tag.type === "goal" && <Trophy size={12} />}
-                          {tag.type === "play" && <Zap size={12} />}
-                          {tag.type === "save" && <Shield size={12} />}
-                          {tag.type === "other" && <Star size={12} />}
-                        </div>
-                        <button 
-                          className="tag-delete"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeTag(tag.id);
-                          }}
-                        >
-                          <X size={12} />
-                        </button>
-                      </div>
-                    </div>
-                  ))
-              )}
-            </div>
-            {tags.length > 0 && (
-              <button
-                className="export-tags-btn"
-                onClick={() => {
-                  const json = JSON.stringify(tags, null, 2);
-                  navigator.clipboard.writeText(json);
-                  alert("Tags copied to clipboard! Paste into manifest.json");
-                }}
-              >
-                Copy Tags JSON
-              </button>
-            )}
           </div>
         </div>
       </div>
