@@ -221,7 +221,14 @@ const App: FC = () => {
         }
 
         if (validFolders.length > 0) {
-          setSelectedFolder(validFolders[0]);
+          // Sort folders by their most recent video date descending, default to latest game
+          const sorted = [...validFolders].sort((a, b) => {
+            const latestDate = (f: FolderManifest) =>
+              f.videos.reduce((max, v) => (v.date > max ? v.date : max), "");
+            return latestDate(b).localeCompare(latestDate(a));
+          });
+          setFolders(sorted);
+          setSelectedFolder(sorted[0]);
         } else {
           setSelectedFolder(null);
         }
@@ -814,9 +821,9 @@ const VideoOverlay: FC<{
               }}
             >
               <MediaProvider />
-              <DefaultVideoLayout 
-                thumbnails={`${MEDIA_ROOT}/${sportPath}/${folderPath}/${video.versions[currentMode]?.filename.replace('.mp4', '_thumbnails.vtt')}`} 
-                icons={defaultLayoutIcons} 
+              <DefaultVideoLayout
+                thumbnails={`${window.location.origin}${MEDIA_ROOT}/${sportPath}/${folderPath}/${video.versions[currentMode]?.filename.replace('.mp4', '_thumbnails.vtt')}`}
+                icons={defaultLayoutIcons}
               />
               <div className="vidstack-top-toolbar">
                 <div className="clip-tool-container">
