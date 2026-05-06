@@ -270,6 +270,80 @@ app.use('/media', express.static(MEDIA_ROOT));
 // --- Serve Built Frontend ---
 app.use(express.static(path.join(__dirname, 'dist')));
 
+// --- Deep-link Open Graph meta injection ---
+// Matches /{sportPath}/{folderPath}/clip{num}
+app.get(/^\/([^/]+)\/([^/]+)\/clip(\d+)$/, (req, res) => {
+  const { 0: sportPath, 1: folderPath, 2: clipNum } = req.params;
+  const distIndex = path.join(__dirname, 'dist', 'index.html');
+
+  try {
+    // Validate sport exists
+    const sportsFile = path.join(MEDIA_ROOT, 'sports.json');
+    if (!fs.existsSync(sportsFile)) return res.sendFile(distIndex);
+    const sports = JSON.parse(fs.readFileSync(sportsFile, 'utf-8'));
+    const sport = sports.find((s) => s.path === sportPath);
+    if (!sport) return res.sendFile(distIndex);
+
+    // Find the manifest for this folder
+    const foldersFile = path.join(MEDIA_ROOT, sportPath, 'folders.json');
+    if (!fs.existsSync(foldersFile)) return res.sendFile(distIndex);
+    const folders = JSON.parse(fs.readFileSync(foldersFile, 'utf-8'));
+
+    // folders.json entries have { name, manifest_path }
+    const folderEntry = folders.find((f) => {
+      const rel = f.manifest_path.replace(/^\.\//, '');
+      const dir = rel.substring(0, rel.lastIndexOf('/'));
+      return dir.split('/').pop() === folderPath || dir === folderPath;
+    });
+    if (!folderEntry) return res.sendFile(distIndex);
+
+    const relManifest = folderEntry.manifest_path.replace(/^\.\//, '');
+    const manifestFile = path.join(MEDIA_ROOT, sportPath, relManifest);
+    if (!fs.existsSync(manifestFile)) return res.sendFile(distIndex);
+    const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf-8'));
+
+    const video = manifest.videos.find((v) => v.clip_num === clipNum);
+    if (!video) return res.sendFile(distIndex);
+
+    // Build meta values
+    const toTitleCase = (str) =>
+      str.replace(/\w\S*/g, (w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase());
+
+    const title = `Clip #${video.clip_num} vs ${toTitleCase(video.opponent)} — ${sport.name}`;
+    const description = `Watch this ${sport.name} highlight from ${video.date}. Clip #${video.clip_num} vs ${toTitleCase(video.opponent)}.`;
+    const pageUrl = `${req.protocol}://${req.get('host')}/${sportPath}/${folderPath}/clip${clipNum}`;
+
+    // Thumbnail URL — use the manifest thumbnail relative to the folder
+    const folderDir = relManifest.substring(0, relManifest.lastIndexOf('/'));
+    const imageUrl = `${req.protocol}://${req.get('host')}/media/${sportPath}/${folderDir}/${video.thumbnail}`;
+
+    const metaTags = `
+    <meta property="og:type" content="video.other" />
+    <meta property="og:site_name" content="WAHS Vault" />
+    <meta property="og:title" content="${title.replace(/"/g, '&quot;')}" />
+    <meta property="og:description" content="${description.replace(/"/g, '&quot;')}" />
+    <meta property="og:url" content="${pageUrl}" />
+    <meta property="og:image" content="${imageUrl}" />
+    <meta property="og:image:width" content="1280" />
+    <meta property="og:image:height" content="720" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="${title.replace(/"/g, '&quot;')}" />
+    <meta name="twitter:description" content="${description.replace(/"/g, '&quot;')}" />
+    <meta name="twitter:image" content="${imageUrl}" />`;
+
+    let html = fs.readFileSync(distIndex, 'utf-8');
+    html = html.replace('</head>', `${metaTags}\n  </head>`);
+    // Also update the <title>
+    html = html.replace(/<title>[^<]*<\/title>/, `<title>${title.replace(/</g, '&lt;')}</title>`);
+
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
+  } catch (err) {
+    console.error('OG meta injection error:', err);
+    res.sendFile(distIndex);
+  }
+});
+
 // --- SPA Fallback ---
 app.get(/.*/, (req, res) => {
   res.sendFile(path.join(__dirname, 'dist', 'index.html'));
