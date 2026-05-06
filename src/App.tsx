@@ -68,6 +68,7 @@ const App: FC = () => {
   const [announcement, setAnnouncement] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [pwaInstallReady, setPwaInstallReady] = useState(false);
 
   const [savedClips, setSavedClips] = useState<SavedClip[]>([]);
   const [savedClipsOpen, setSavedClipsOpen] = useState(false);
@@ -79,6 +80,16 @@ const App: FC = () => {
   const deepLink = useRef(parseDeepLink(window.location.pathname));
   const targetSeekTime = useRef<number | null>(null);
   const contentRef = useRef<HTMLElement>(null);
+
+  // Listen for Chrome's beforeinstallprompt — only fires in browsers that support PWA install
+  useEffect(() => {
+    const handler = (e: Event) => {
+      e.preventDefault();
+      setPwaInstallReady(true);
+    };
+    window.addEventListener("beforeinstallprompt", handler);
+    return () => window.removeEventListener("beforeinstallprompt", handler);
+  }, []);
 
   useEffect(() => {
     if (selectedVideo) {
@@ -108,17 +119,15 @@ const App: FC = () => {
   useEffect(() => {
     const fetchBaseData = async () => {
       try {
-        // Set default announcement if none exists (PWA prompt)
+        // Set default announcement if none exists (iOS PWA prompt only)
         const checkPWA = (current: string | null) => {
           if (!current) {
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
             const isStandalone = window.matchMedia(
               "(display-mode: standalone)",
             ).matches;
-            if (!isStandalone) {
-              return isIOS
-                ? "Install WAHS Vault: Tap Share and 'Add to Home Screen'"
-                : "Install WAHS Vault: Tap the browser menu and 'Install App'";
+            if (!isStandalone && isIOS) {
+              return "Install WAHS Vault: Tap Share and 'Add to Home Screen'";
             }
           }
           return current;
@@ -272,7 +281,22 @@ const App: FC = () => {
         onClick={() => setIsSidebarOpen(false)}
       />
 
-      {announcement && (
+      {pwaInstallReady && (
+        <div className="announcement-banner">
+          <div className="announcement-content">
+            <Info size={18} className="icon" />
+            <span>Install WAHS Vault: Tap the browser menu and &lsquo;Install App&rsquo;</span>
+          </div>
+          <button
+            className="announcement-close"
+            onClick={() => setPwaInstallReady(false)}
+          >
+            <X size={16} />
+          </button>
+        </div>
+      )}
+
+      {!pwaInstallReady && announcement && (
         <div className="announcement-banner">
           <div className="announcement-content">
             <Info size={18} className="icon" />
