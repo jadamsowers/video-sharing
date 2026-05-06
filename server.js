@@ -85,6 +85,10 @@ const deleteMissingTags = db.prepare(`
 app.use(express.json());
 
 app.use((req, res, next) => {
+  // Skip COEP/COOP for media and image requests so og:image crawlers can fetch thumbnails
+  if (req.path.startsWith('/media/') || req.path.startsWith('/clips/')) {
+    return next();
+  }
   res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
   res.setHeader('Cross-Origin-Embedder-Policy', 'require-corp');
   next();
@@ -273,20 +277,34 @@ app.use(express.static(path.join(__dirname, 'dist')));
 // --- Deep-link Open Graph meta injection ---
 // Matches /{sportPath}/{folderPath}/clip{num}
 app.get(/^\/([^/]+)\/([^/]+)\/clip(\d+)$/, (req, res) => {
-  const { 0: sportPath, 1: folderPath, 2: clipNum } = req.params;
+  // Express stores regex captures as req.params[0], [1], [2] (string keys)
+  const sportPath = req.params[0];
+  const folderPath = req.params[1];
+  const clipNum = req.params[2];
   const distIndex = path.join(__dirname, 'dist', 'index.html');
+
+  console.log(`[OG] Deep-link request: sport=${sportPath} folder=${folderPath} clip=${clipNum}`);
 
   try {
     // Validate sport exists
     const sportsFile = path.join(MEDIA_ROOT, 'sports.json');
-    if (!fs.existsSync(sportsFile)) return res.sendFile(distIndex);
+    if (!fs.existsSync(sportsFile)) {
+      console.log('[OG] sports.json not found, falling back');
+      return res.sendFile(distIndex);
+    }
     const sports = JSON.parse(fs.readFileSync(sportsFile, 'utf-8'));
     const sport = sports.find((s) => s.path === sportPath);
-    if (!sport) return res.sendFile(distIndex);
+    if (!sport) {
+      console.log(`[OG] Sport "${sportPath}" not found, falling back`);
+      return res.sendFile(distIndex);
+    }
 
     // Find the manifest for this folder
     const foldersFile = path.join(MEDIA_ROOT, sportPath, 'folders.json');
-    if (!fs.existsSync(foldersFile)) return res.sendFile(distIndex);
+    if (!fs.existsSync(foldersFile)) {
+      console.log(`[OG] folders.json not found for sport "${sportPath}", falling back`);
+      return res.sendFile(distIndex);
+    }
     const folders = JSON.parse(fs.readFileSync(foldersFile, 'utf-8'));
 
     // folders.json entries have { name, manifest_path }
@@ -295,15 +313,24 @@ app.get(/^\/([^/]+)\/([^/]+)\/clip(\d+)$/, (req, res) => {
       const dir = rel.substring(0, rel.lastIndexOf('/'));
       return dir.split('/').pop() === folderPath || dir === folderPath;
     });
-    if (!folderEntry) return res.sendFile(distIndex);
+    if (!folderEntry) {
+      console.log(`[OG] Folder "${folderPath}" not found in folders.json, falling back`);
+      return res.sendFile(distIndex);
+    }
 
     const relManifest = folderEntry.manifest_path.replace(/^\.\//, '');
     const manifestFile = path.join(MEDIA_ROOT, sportPath, relManifest);
-    if (!fs.existsSync(manifestFile)) return res.sendFile(distIndex);
+    if (!fs.existsSync(manifestFile)) {
+      console.log(`[OG] manifest.json not found at ${manifestFile}, falling back`);
+      return res.sendFile(distIndex);
+    }
     const manifest = JSON.parse(fs.readFileSync(manifestFile, 'utf-8'));
 
     const video = manifest.videos.find((v) => v.clip_num === clipNum);
-    if (!video) return res.sendFile(distIndex);
+    if (!video) {
+      console.log(`[OG] Clip "${clipNum}" not found in manifest, falling back`);
+      return res.sendFile(distIndex);
+    }
 
     // Build meta values
     const toTitleCase = (str) =>
@@ -311,11 +338,19 @@ app.get(/^\/([^/]+)\/([^/]+)\/clip(\d+)$/, (req, res) => {
 
     const title = `Clip #${video.clip_num} vs ${toTitleCase(video.opponent)} — ${sport.name}`;
     const description = `Watch this ${sport.name} highlight from ${video.date}. Clip #${video.clip_num} vs ${toTitleCase(video.opponent)}.`;
-    const pageUrl = `${req.protocol}://${req.get('host')}/${sportPath}/${folderPath}/clip${clipNum}`;
+
+    // Use X-Forwarded-Proto if behind a reverse proxy (e.g. nginx/Caddy with HTTPS)
+    const proto = req.get('x-forwarded-proto') || req.protocol;
+    const host = req.get('x-forwarded-host') || req.get('host');
+    const baseUrl = `${proto}://${host}`;
+
+    const pageUrl = `${baseUrl}/${sportPath}/${folderPath}/clip${clipNum}`;
 
     // Thumbnail URL — use the manifest thumbnail relative to the folder
     const folderDir = relManifest.substring(0, relManifest.lastIndexOf('/'));
-    const imageUrl = `${req.protocol}://${req.get('host')}/media/${sportPath}/${folderDir}/${video.thumbnail}`;
+    const imageUrl = `${baseUrl}/media/${sportPath}/${folderDir}/${video.thumbnail}`;
+
+    console.log(`[OG] Injecting meta: title="${title}" image="${imageUrl}"`);
 
     const metaTags = `
     <meta property="og:type" content="video.other" />
@@ -336,10 +371,10 @@ app.get(/^\/([^/]+)\/([^/]+)\/clip(\d+)$/, (req, res) => {
     // Also update the <title>
     html = html.replace(/<title>[^<]*<\/title>/, `<title>${title.replace(/</g, '&lt;')}</title>`);
 
-    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Content-Type', 'text/html; charset=utf-8');
     res.send(html);
   } catch (err) {
-    console.error('OG meta injection error:', err);
+    console.error('[OG] meta injection error:', err);
     res.sendFile(distIndex);
   }
 });
