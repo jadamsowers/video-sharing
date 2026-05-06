@@ -474,36 +474,41 @@ main.content {
   }
 }
 
-.slomo-overlay-toggle {
+.slomo-bottom-btn {
   position: absolute;
-  top: 20px;
-  left: 20px;
+  /* Sit just above the Vidstack controls bar (~48px tall) */
+  bottom: 56px;
+  left: 50%;
+  transform: translateX(-50%);
   z-index: 1000;
-  background: rgba(30, 30, 30, 0.6);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  color: #fff;
-  padding: 8px 18px;
+  background: rgba(20, 20, 20, 0.75);
+  backdrop-filter: blur(10px);
+  border: 1.5px solid rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.55);
+  padding: 6px 18px;
   border-radius: 100px;
+  font-family: inherit;
   font-weight: 800;
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+  pointer-events: auto;
 }
 
-.slomo-overlay-toggle:hover {
-  background: rgba(255, 255, 255, 0.15);
-  transform: translateY(-2px);
-  border-color: rgba(255, 255, 255, 0.4);
+.slomo-bottom-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.5);
+  color: #fff;
 }
 
-.slomo-overlay-toggle.active {
+.slomo-bottom-btn.active {
   background: var(--primary);
   border-color: var(--primary);
-  box-shadow: 0 0 20px rgba(52, 152, 219, 0.4);
+  color: #fff;
+  box-shadow: 0 0 16px rgba(37, 150, 190, 0.5);
 }
 
 .player-footer {
@@ -1426,10 +1431,9 @@ main.content {
     width: 100%;
   }
 
-  .slomo-bottom-toggle {
-    bottom: 12px;
-    right: 120px;
-    padding: 4px 8px;
+  .slomo-bottom-btn {
+    bottom: 50px;
+    padding: 5px 14px;
     font-size: 0.65rem;
   }
 }
@@ -1448,7 +1452,7 @@ vds-menu-button[aria-label="Settings"],
   display: none !important;
 }
 
-/* slomo-bottom-toggle removed and moved to header */
+/* slomo-bottom-btn: bottom-center overlay above Vidstack controls */
 
 .clip-view-link:hover {
   text-decoration: underline;

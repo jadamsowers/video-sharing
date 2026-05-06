@@ -836,15 +836,6 @@ const VideoOverlay: FC<{
       <div className="player-main">
         <div className="player-content">
           <div className="video-wrapper">
-            {video.versions["120fps"] && (
-              <button 
-                className={`slomo-overlay-toggle ${currentMode === "120fps" ? "active" : ""}`}
-                onClick={() => switchToMode(currentMode === "60fps" ? "120fps" : "60fps")}
-                title="Toggle Speed"
-              >
-                {currentMode === "120fps" ? "Slo-mo" : "1x"}
-              </button>
-            )}
             <MediaPlayer
               ref={videoRef}
               title={`Clip #${video.clip_num} vs ${toTitleCase(video.opponent)}`}
@@ -871,6 +862,15 @@ const VideoOverlay: FC<{
                 thumbnails={`${window.location.origin}${MEDIA_ROOT}/${sportPath}/${folderPath}/${video.versions[currentMode]?.filename.replace('.mp4', '_thumbnails.vtt')}`}
                 icons={defaultLayoutIcons}
               />
+              {video.versions["120fps"] && (
+                <button
+                  className={`slomo-bottom-btn ${currentMode === "120fps" ? "active" : ""}`}
+                  onClick={(e) => { e.stopPropagation(); switchToMode(currentMode === "60fps" ? "120fps" : "60fps"); }}
+                  title="Toggle Slow Motion"
+                >
+                  SLO-MO
+                </button>
+              )}
               <div className="vidstack-top-toolbar">
                 <div className="clip-tool-container">
                   {!isClipping ? (
