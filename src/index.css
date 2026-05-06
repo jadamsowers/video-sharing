@@ -1276,14 +1276,22 @@ main.content {
     padding: 16px;
     z-index: 3000;
     overflow-y: auto;
+    /* Ensure the overlay fills the full viewport and scrolls internally */
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 100%;
+  }
+
+  .player-header {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
   }
 
   .player-close {
-    position: fixed;
-    top: 16px;
-    right: 16px;
     padding: 8px;
-    z-index: 3001;
     background: rgba(0, 0, 0, 0.5);
   }
 
@@ -1321,7 +1329,8 @@ main.content {
     left: 4px;
     right: 4px;
     gap: 4px;
-    justify-content: flex-start;
+    /* Keep clip button on the right so it doesn't overlap the slomo toggle (top-left) */
+    justify-content: flex-end;
     flex-wrap: wrap;
     overflow: visible;
   }
@@ -1374,6 +1383,28 @@ main.content {
   .download-btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .player-footer {
+    padding-bottom: 24px;
+  }
+
+  .compact-dropdown {
+    position: fixed;
+    bottom: auto;
+    left: 16px;
+    right: 16px;
+    z-index: 3100;
+  }
+
+  .footer-actions {
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .compact-action-btn,
+  .download-trigger {
+    width: 100%;
   }
 
   .slomo-bottom-toggle {

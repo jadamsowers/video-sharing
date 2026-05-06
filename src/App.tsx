@@ -81,8 +81,13 @@ const App: FC = () => {
   const contentRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (selectedVideo && contentRef.current) {
-      contentRef.current.scrollTo(0, 0);
+    if (selectedVideo) {
+      // On mobile, main.content has overflow-y: visible so the page scroll
+      // lives on window. On desktop it lives on the content element itself.
+      if (contentRef.current) {
+        contentRef.current.scrollTo(0, 0);
+      }
+      window.scrollTo(0, 0);
     }
   }, [selectedVideo]);
 
