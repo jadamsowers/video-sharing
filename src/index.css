@@ -474,41 +474,38 @@ main.content {
   }
 }
 
-.slomo-bottom-btn {
-  position: absolute;
-  /* Sit just above the Vidstack controls bar (~48px tall) */
-  bottom: 56px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 1000;
-  background: rgba(20, 20, 20, 0.75);
-  backdrop-filter: blur(10px);
-  border: 1.5px solid rgba(255, 255, 255, 0.25);
-  color: rgba(255, 255, 255, 0.55);
-  padding: 6px 18px;
+/* SLO-MO button injected into Vidstack controls bar via slots */
+.slomo-slot-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  color: rgba(255, 255, 255, 0.5);
+  padding: 3px 10px;
   border-radius: 100px;
   font-family: inherit;
   font-weight: 800;
-  font-size: 0.72rem;
+  font-size: 0.65rem;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.07em;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
-  pointer-events: auto;
+  transition: all 0.18s ease;
+  height: 36px;
+  white-space: nowrap;
 }
 
-.slomo-bottom-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.5);
+.slomo-slot-btn:hover {
+  border-color: rgba(255, 255, 255, 0.6);
   color: #fff;
+  background: rgba(255, 255, 255, 0.08);
 }
 
-.slomo-bottom-btn.active {
+.slomo-slot-btn.active {
   background: var(--primary);
   border-color: var(--primary);
   color: #fff;
-  box-shadow: 0 0 16px rgba(37, 150, 190, 0.5);
+  box-shadow: 0 0 10px rgba(37, 150, 190, 0.45);
 }
 
 .player-footer {
@@ -1431,11 +1428,6 @@ main.content {
     width: 100%;
   }
 
-  .slomo-bottom-btn {
-    bottom: 50px;
-    padding: 5px 14px;
-    font-size: 0.65rem;
-  }
 }
 
 /* Vidstack custom overrides */
@@ -1452,7 +1444,7 @@ vds-menu-button[aria-label="Settings"],
   display: none !important;
 }
 
-/* slomo-bottom-btn: bottom-center overlay above Vidstack controls */
+/* slomo-slot-btn: injected into Vidstack controls bar via DefaultVideoLayout slots */
 
 .clip-view-link:hover {
   text-decoration: underline;
