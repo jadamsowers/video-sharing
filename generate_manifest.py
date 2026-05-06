@@ -1,5 +1,6 @@
 import os
 import json
+import math
 import subprocess
 import re
 from pathlib import Path
@@ -56,6 +57,74 @@ def generate_thumbnail(video_path, thumbnail_path):
     ]
     subprocess.run(cmd, capture_output=True, check=True)
 
+
+def generate_scrubber_thumbnails(video_path, info, interval=2, width=160, columns=10):
+    """
+    Generates a sprite sheet (.jpg) and WebVTT file for vidstack scrubber thumbnails.
+    Skips generation if both files already exist.
+    Returns True if generated (or already present), False on error.
+    """
+    video_path = Path(video_path)
+    basename = video_path.stem          # e.g. Salem_2026-03-18_024_60fps
+    out_dir = video_path.parent
+
+    sprite_path = out_dir / f"{basename}_sprite.jpg"
+    vtt_path    = out_dir / f"{basename}_thumbnails.vtt"
+
+    # Skip if already generated
+    if sprite_path.exists() and vtt_path.exists():
+        return True
+
+    try:
+        duration = float(info['duration'])
+        orig_w   = int(info['width'])
+        orig_h   = int(info['height'])
+    except (KeyError, TypeError, ValueError) as e:
+        print(f"  Skipping scrubber thumbnails for {video_path.name}: bad video info ({e})")
+        return False
+
+    height         = int((width / orig_w) * orig_h)
+    num_thumbnails = math.ceil(duration / interval)
+    rows           = math.ceil(num_thumbnails / columns)
+
+    print(f"  Generating scrubber thumbnails for {video_path.name} ({columns}x{rows} grid)…")
+
+    # Build sprite sheet
+    ffmpeg_cmd = [
+        "ffmpeg", "-y", "-i", str(video_path),
+        "-filter_complex", f"fps=1/{interval},scale={width}:{height},tile={columns}x{rows}",
+        "-frames:v", "1",
+        "-q:v", "3",
+        str(sprite_path)
+    ]
+    try:
+        subprocess.run(ffmpeg_cmd, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    except subprocess.CalledProcessError as e:
+        print(f"  ffmpeg sprite generation failed for {video_path.name}: {e}")
+        return False
+
+    # Build VTT file
+    def fmt_time(seconds):
+        h = int(seconds // 3600)
+        m = int((seconds % 3600) // 60)
+        s = seconds % 60
+        return f"{h:02d}:{m:02d}:{s:06.3f}"
+
+    with open(vtt_path, 'w') as f:
+        f.write("WEBVTT\n\n")
+        for i in range(num_thumbnails):
+            start = i * interval
+            end   = min((i + 1) * interval, duration)
+            col   = i % columns
+            row   = i // columns
+            x     = col * width
+            y     = row * height
+            f.write(f"{fmt_time(start)} --> {fmt_time(end)}\n")
+            f.write(f"{basename}_sprite.jpg#xywh={x},{y},{width},{height}\n\n")
+
+    print(f"  ✅ Scrubber thumbnails written: {vtt_path.name}, {sprite_path.name}")
+    return True
+
 def process_sport_folder(sport_path, existing_names=None):
     root = Path(sport_path)
     if not root.exists() or not root.is_dir():
@@ -101,7 +170,7 @@ def process_sport_folder(sport_path, existing_names=None):
                     'fps': info['fps'],
                     'duration': info['duration']
                 }
-                
+
                 thumb_name = f"{base_name}_thumb.jpg"
                 thumb_path = folder / thumb_name
                 if not thumb_path.exists():
@@ -109,8 +178,11 @@ def process_sport_folder(sport_path, existing_names=None):
                         generate_thumbnail(file, thumb_path)
                     except Exception as e:
                         print(f"Failed thumb for {file.name}: {e}")
-                
+
                 video_groups[base_name]['thumbnail'] = thumb_name
+
+                # Generate scrubber thumbnails (VTT + sprite) — skipped if already present
+                generate_scrubber_thumbnails(file, info)
         
         # Load existing manifest to preserve tags
         existing_tags = {}
