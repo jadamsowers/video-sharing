@@ -55,6 +55,24 @@ const formatDuration = (seconds: number) => {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
+/** Convert a string to Title Case */
+const toTitleCase = (str: string) =>
+  str.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+
+/**
+ * Split a folder name like "Douglas Freeman - 2025-04-10" into
+ * { opponent: "Douglas Freeman", date: "2025-04-10" }.
+ * Falls back gracefully if no date pattern is found.
+ */
+const parseFolderName = (name: string): { opponent: string; date: string | null } => {
+  // Match a trailing ISO date (YYYY-MM-DD) optionally preceded by " - " or "-"
+  const match = name.match(/^(.*?)\s*[-–]\s*(\d{4}-\d{2}-\d{2})\s*$/);
+  if (match) {
+    return { opponent: match[1].trim(), date: match[2] };
+  }
+  return { opponent: name, date: null };
+};
+
 const App: FC = () => {
   const [sports, setSports] = useState<Sport[]>([]);
   const [selectedSport, setSelectedSport] = useState<Sport | null>(null);
@@ -352,21 +370,25 @@ const App: FC = () => {
               <Folder size={16} /> Collections
             </h3>
             <nav className="folder-list">
-              {folders.map((folder) => (
-                <div
-                  key={folder.name}
-                  className={`folder-item ${selectedFolder?.name === folder.name ? "active" : ""}`}
-                  onClick={() => {
-                    setSelectedFolder(folder);
-                    setSelectedVideo(null);
-                    targetSeekTime.current = null;
-                    setIsTagSearchOpen(false);
-                    setIsSidebarOpen(false);
-                  }}
-                >
-                  <span>{folder.name}</span>
-                </div>
-              ))}
+              {folders.map((folder) => {
+                const { opponent, date } = parseFolderName(folder.name);
+                return (
+                  <div
+                    key={folder.name}
+                    className={`folder-item ${selectedFolder?.name === folder.name ? "active" : ""}`}
+                    onClick={() => {
+                      setSelectedFolder(folder);
+                      setSelectedVideo(null);
+                      targetSeekTime.current = null;
+                      setIsTagSearchOpen(false);
+                      setIsSidebarOpen(false);
+                    }}
+                  >
+                    <span>{opponent}</span>
+                    {date && <span className="folder-item-date">{date}</span>}
+                  </div>
+                );
+              })}
             </nav>
           </div>
 
@@ -573,7 +595,7 @@ const App: FC = () => {
                   </div>
                   <div className="card-info">
                     <h3>
-                      Clip #{vid.clip_num} vs {vid.opponent}
+                      Clip #{vid.clip_num} vs {toTitleCase(vid.opponent)}
                     </h3>
                     <p className="metadata">{vid.date}</p>
                   </div>
@@ -629,7 +651,7 @@ const VideoOverlay: FC<{
     const url = buildClipUrl(sportPath, folderPath, video.clip_num);
     try {
       if (navigator.share) {
-        await navigator.share({ title: `Clip #${video.clip_num} vs ${video.opponent}`, url });
+        await navigator.share({ title: `Clip #${video.clip_num} vs ${toTitleCase(video.opponent)}`, url });
       } else {
         await navigator.clipboard.writeText(url);
         setShareCopied(true);
@@ -730,7 +752,7 @@ const VideoOverlay: FC<{
           opponent: video.opponent,
           clipDate: video.date,
           sourceClip: video.clip_num,
-          label: `Clip #${video.clip_num} vs ${video.opponent} @ ${formatDuration(start)}`,
+          label: `Clip #${video.clip_num} vs ${toTitleCase(video.opponent)} @ ${formatDuration(start)}`,
         })
       });
 
@@ -825,7 +847,7 @@ const VideoOverlay: FC<{
             )}
             <MediaPlayer
               ref={videoRef}
-              title={`Clip #${video.clip_num} vs ${video.opponent}`}
+              title={`Clip #${video.clip_num} vs ${toTitleCase(video.opponent)}`}
               src={`${MEDIA_ROOT}/${sportPath}/${folderPath}/${video.versions[currentMode]?.filename}`}
               autoPlay
               playsInline
