@@ -55,9 +55,11 @@ const formatDuration = (seconds: number) => {
   return `${mins}:${secs.toString().padStart(2, "0")}`;
 };
 
-/** Convert a string to Title Case */
+/** Convert a string to Title Case, replacing underscores/hyphens with spaces */
 const toTitleCase = (str: string) =>
-  str.replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
+  str
+    .replace(/[_-]/g, " ")
+    .replace(/\w\S*/g, (word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase());
 
 /**
  * Split a folder name like "Douglas Freeman - 2025-04-10" into
@@ -384,7 +386,7 @@ const App: FC = () => {
                       setIsSidebarOpen(false);
                     }}
                   >
-                    <span>{opponent}</span>
+                    <span>{toTitleCase(opponent)}</span>
                     {date && <span className="folder-item-date">{date}</span>}
                   </div>
                 );
