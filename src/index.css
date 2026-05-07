@@ -474,15 +474,21 @@ main.content {
   }
 }
 
-/* SLO-MO button injected into Vidstack controls bar via slots */
+/* SLO-MO toggle — absolute overlay centered in the Vidstack controls row */
 .slomo-slot-btn {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: transparent;
-  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(8px);
+  border: 1.5px solid rgba(255, 255, 255, 0.28);
   color: rgba(255, 255, 255, 0.5);
-  padding: 3px 10px;
+  padding: 4px 14px;
   border-radius: 100px;
   font-family: inherit;
   font-weight: 800;
@@ -491,14 +497,15 @@ main.content {
   letter-spacing: 0.07em;
   cursor: pointer;
   transition: all 0.18s ease;
-  height: 36px;
+  height: 30px;
   white-space: nowrap;
+  pointer-events: auto;
 }
 
 .slomo-slot-btn:hover {
   border-color: rgba(255, 255, 255, 0.6);
   color: #fff;
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .slomo-slot-btn.active {
@@ -560,27 +567,28 @@ main.content {
 .tag-capture-pro {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 24px;
-  padding: 24px;
+  border-radius: 16px;
+  padding: 14px 16px;
   display: flex;
-  flex-direction: column;
-  gap: 20px;
+  flex-direction: row;
+  align-items: center;
+  gap: 12px;
 }
 
 .tag-inputs-row {
   display: flex;
-  gap: 16px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .mini-input-group {
-  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .mini-label {
-  font-size: 0.7rem;
+  font-size: 0.6rem;
   text-transform: uppercase;
   letter-spacing: 0.08em;
   color: var(--muted);
@@ -591,40 +599,47 @@ main.content {
   background: rgba(0, 0, 0, 0.4);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #fff;
-  padding: 12px;
-  border-radius: 10px;
-  font-size: 0.9rem;
+  padding: 6px 8px;
+  border-radius: 8px;
+  font-size: 0.8rem;
   font-weight: 600;
+  height: 34px;
+}
+
+.jersey-mini {
+  width: 52px;
 }
 
 .quick-action-grid {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 12px;
-}
-
-@media (min-width: 600px) {
-  .quick-action-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
+  grid-template-columns: repeat(4, 1fr);
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
 }
 
 .qa-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 10px;
-  padding: 14px;
-  border-radius: 12px;
+  gap: 6px;
+  padding: 8px 6px;
+  border-radius: 10px;
   border: none;
   color: #fff;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
+  height: 34px;
+  white-space: nowrap;
 }
 
 .qa-btn span {
-  font-size: 0.85rem;
+  font-size: 0.75rem;
+}
+
+.qa-btn svg {
+  flex-shrink: 0;
 }
 
 .qa-btn.goal { background: #e74c3c; }
@@ -1333,10 +1348,6 @@ main.content {
     min-width: 0;
     max-height: none;
     flex: none;
-  }
-
-  .quick-tags {
-    grid-template-columns: repeat(4, 1fr);
   }
 
   .player-controls {
