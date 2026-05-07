@@ -271,10 +271,8 @@ app.use('/clips', express.static(CLIPS_DIR));
 // --- Serve Media ---
 app.use('/media', express.static(MEDIA_ROOT));
 
-// --- Serve Built Frontend ---
-app.use(express.static(path.join(__dirname, 'dist')));
-
 // --- Deep-link Open Graph meta injection ---
+// Must be registered BEFORE express.static so it intercepts clip URLs
 // Matches /{sportPath}/{folderPath}/clip{num}
 app.get(/^\/([^/]+)\/([^/]+)\/clip(\d+)$/, (req, res) => {
   // Express stores regex captures as req.params[0], [1], [2] (string keys)
@@ -378,6 +376,9 @@ app.get(/^\/([^/]+)\/([^/]+)\/clip(\d+)$/, (req, res) => {
     res.sendFile(distIndex);
   }
 });
+
+// --- Serve Built Frontend (static assets: JS, CSS, etc.) ---
+app.use(express.static(path.join(__dirname, 'dist')));
 
 // --- SPA Fallback ---
 app.get(/.*/, (req, res) => {
