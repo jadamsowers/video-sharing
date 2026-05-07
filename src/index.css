@@ -474,21 +474,15 @@ main.content {
   }
 }
 
-/* SLO-MO toggle — absolute overlay centered in the Vidstack controls row */
+/* SLO-MO toggle — rendered inline in Vidstack controls bar via beforeAirPlayButton slot */
 .slomo-slot-btn {
-  position: absolute;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 200;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: rgba(0, 0, 0, 0.55);
-  backdrop-filter: blur(8px);
+  background: transparent;
   border: 1.5px solid rgba(255, 255, 255, 0.28);
   color: rgba(255, 255, 255, 0.5);
-  padding: 4px 14px;
+  padding: 0 10px;
   border-radius: 100px;
   font-family: inherit;
   font-weight: 800;
@@ -497,15 +491,15 @@ main.content {
   letter-spacing: 0.07em;
   cursor: pointer;
   transition: all 0.18s ease;
-  height: 30px;
+  height: 36px;
   white-space: nowrap;
-  pointer-events: auto;
+  margin-right: 4px;
 }
 
 .slomo-slot-btn:hover {
   border-color: rgba(255, 255, 255, 0.6);
   color: #fff;
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .slomo-slot-btn.active {
