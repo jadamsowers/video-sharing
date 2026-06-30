@@ -1462,9 +1462,17 @@ main.content {
     gap: 12px;
   }
 
+  /* In the column layout, reset flex so basis (220px) isn't applied as height */
+  .compact-action-btn,
+  .compact-download {
+    flex: 0 0 auto;
+    width: 100%;
+  }
+
   .compact-action-btn,
   .download-trigger {
     width: 100%;
+    height: 52px;
   }
 
   /* Highlight Tagging - stack vertically so it fits mobile widths */
