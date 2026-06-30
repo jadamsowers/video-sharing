@@ -41,8 +41,11 @@ body {
 .app-container {
   display: flex;
   height: 100vh;
-  width: 100vw;
+  height: 100dvh;
+  width: 100%;
+  max-width: 100%;
   flex-direction: column;
+  overflow-x: hidden;
 }
 
 /* Banner Styling */
@@ -58,14 +61,28 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 
 .announcement-content {
   flex: 1;
+  min-width: 0;
   display: flex;
   justify-content: center;
   align-items: center;
   gap: 10px;
+}
+
+.announcement-content span {
+  min-width: 0;
+}
+
+.announcement-content .icon {
+  flex-shrink: 0;
+}
+
+.announcement-close {
+  flex-shrink: 0;
 }
 
 .announcement-close {
@@ -285,11 +302,15 @@ main.content {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  min-width: 0;
 }
 
 .saved-clip-label {
   font-weight: 600;
   color: var(--foreground);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .saved-clip-meta {
@@ -327,7 +348,7 @@ main.content {
 
 .video-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 28px;
 }
 
@@ -458,21 +479,7 @@ main.content {
   gap: 24px;
 }
 
-.video-wrapper {
-  position: relative;
-  flex: 1;
-  background: #000;
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-  min-height: 400px;
-}
-
-@media (max-width: 768px) {
-  .video-wrapper {
-    min-height: 250px;
-  }
-}
+/* .video-wrapper is consolidated into a single definition further below */
 
 /* SLO-MO toggle — rendered inline in Vidstack controls bar via beforeAirPlayButton slot */
 .slomo-slot-btn {
@@ -518,12 +525,13 @@ main.content {
 
 .footer-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 16px;
-  align-items: center;
+  align-items: stretch;
 }
 
 .compact-action-btn {
-  flex: 1;
+  flex: 1 1 220px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -540,7 +548,7 @@ main.content {
 
 .compact-download {
   position: relative;
-  flex: 1;
+  flex: 1 1 220px;
 }
 
 .download-trigger {
@@ -567,6 +575,7 @@ main.content {
   flex-direction: row;
   align-items: center;
   gap: 12px;
+  max-width: 100%;
 }
 
 .tag-inputs-row {
@@ -647,6 +656,7 @@ main.content {
   gap: 10px;
   position: relative;
   z-index: 10;
+  max-width: 100%;
 }
 
 .tag-pill {
@@ -772,15 +782,16 @@ main.content {
 }
 
 .video-wrapper {
+  position: relative;
   width: 100%;
   max-width: 1200px;
-  aspect-ratio: 16/9;
+  aspect-ratio: 16 / 9;
   background: #000;
   border-radius: 12px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9);
   overflow: hidden;
-  position: relative;
   border: 1px solid var(--glass-border);
+  margin: 0 auto;
 }
 
 .video-wrapper video {
@@ -1181,6 +1192,16 @@ main.content {
     gap: 16px;
   }
 
+  /* Saved clips: keep label/actions on one row but allow label to shrink */
+  .saved-clip-row {
+    padding: 12px 14px;
+    gap: 10px;
+  }
+
+  .saved-clip-actions {
+    flex-shrink: 0;
+  }
+
   .mobile-header {
     position: sticky;
     top: 0;
@@ -1330,11 +1351,20 @@ main.content {
     align-items: center;
     gap: 20px;
     overflow-y: visible;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .player-content {
+    width: 100%;
+    min-width: 0;
+    gap: 16px;
   }
 
   .video-wrapper {
-    width: 95vw;
+    width: 100%;
     max-width: none;
+    margin: 0;
   }
 
   .player-sidebar {
@@ -1433,6 +1463,74 @@ main.content {
     width: 100%;
   }
 
+  /* Highlight Tagging - stack vertically so it fits mobile widths */
+  .tag-capture-pro {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 14px;
+    padding: 14px;
+    width: 100%;
+  }
+
+  .tag-inputs-row {
+    width: 100%;
+    gap: 10px;
+  }
+
+  .mini-input-group {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .jersey-mini,
+  .category-mini {
+    width: 100%;
+  }
+
+  .quick-action-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    width: 100%;
+  }
+
+  .qa-btn {
+    height: 40px;
+  }
+
+  .tag-pills-container {
+    width: 100%;
+  }
+
+  .tag-pill {
+    max-width: 100%;
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+/* Very small phones — tighten clip toolbar and tag buttons further */
+@media (max-width: 380px) {
+  .quick-action-grid {
+    gap: 6px;
+  }
+
+  .qa-btn {
+    padding: 8px 4px;
+  }
+
+  .qa-btn span {
+    font-size: 0.7rem;
+  }
+
+  .footer-actions .compact-action-btn span,
+  .footer-actions .download-trigger span {
+    font-size: 0.9rem;
+  }
+
+  .clip-timeline-container {
+    left: 6px;
+    right: 6px;
+  }
 }
 
 /* Vidstack custom overrides */
@@ -1546,7 +1644,7 @@ vds-menu-button[aria-label="Settings"],
 
 .tag-results-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 20px;
 }
 
